@@ -52,7 +52,7 @@ function updateUI() {
     updateButtons();
 }
 
-// Рендер руки игрока (ПЛОТНЫЙ ВЕЕР)
+// Рендер руки игрока (Плотный веер)
 function renderPlayerHand() {
     const container = document.getElementById('player-hand');
     container.innerHTML = '';
@@ -61,11 +61,11 @@ function renderPlayerHand() {
     const total = cards.length;
     const cardWidth = 90; 
     
-    const angleRange = 40; // БЫЛО 50 (Меньше угол)
+    const angleRange = 40; 
     const angleStep = total > 1 ? angleRange / (total - 1) : 0;
     const startAngle = -angleRange / 2;
 
-    const overlap = 35; // БЫЛО 45 (Больше наложение)
+    const overlap = 35; 
     const handWidth = total * overlap + (cardWidth - overlap);
 
     cards.forEach((card, index) => {
@@ -86,20 +86,34 @@ function renderPlayerHand() {
     });
 }
 
-// Рендер руки соперника (ТОЛЬКО ПЛЕЙСХОЛДЕР)
+// Рендер руки соперника (ВЕРНУТ ВЕЕР)
 function renderOpponent() {
     const container = document.getElementById('opponent-hand');
     container.innerHTML = '';
+    
     const count = gameState.opponentHand.length;
+    // Параметры веера
+    const arcAngle = 30; 
+    const startAngle = -arcAngle / 2;
+    const step = count > 1 ? arcAngle / (count - 1) : 0;
+    const cardWidth = 50; 
+    const overlap = 20;
 
-    if (count > 0) {
-        // Просто одна карта рубашкой в центре
+    const handWidth = count * overlap + (cardWidth - overlap);
+
+    for(let i=0; i<count; i++) {
         const back = document.createElement('div');
         back.className = 'card-back';
-        back.style.transform = 'translateY(15px)'; 
+        
+        const rotate = count > 1 ? startAngle + (step * i) : 0;
+        const xOffset = (i * overlap) - (handWidth / 2); // Центрирование
+
+        // Сдвиг Y, чтобы карты были видны в верхней зоне
+        back.style.transform = `translateX(${xOffset}px) translateY(15px) rotate(${rotate}deg)`; 
+        back.style.zIndex = i;
         container.appendChild(back);
     }
-    // Счетчик карт противника удален.
+    // Числовой счетчик удален.
 }
 
 function renderTable() {
@@ -120,7 +134,7 @@ function renderTable() {
     });
 }
 
-// Рендер колоды (СЧЕТЧИК ИСПРАВЛЕН)
+// Рендер колоды (Счетчик исправлен)
 function renderDeck() {
     const container = document.getElementById('deck-zone');
     container.innerHTML = '';
@@ -141,7 +155,7 @@ function renderDeck() {
         const countEl = document.createElement('div');
         countEl.className = 'deck-count';
         countEl.textContent = gameState.deck.length;
-        stack.appendChild(countEl); // Прикрепляем к стеку
+        stack.appendChild(countEl); 
         
         container.appendChild(stack);
     }
