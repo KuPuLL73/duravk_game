@@ -52,7 +52,7 @@ function updateUI() {
     updateButtons();
 }
 
-// Рендер руки игрока (Плотный веер)
+// Рендер руки игрока (ДИНАМИЧЕСКАЯ ПЛОТНОСТЬ)
 function renderPlayerHand() {
     const container = document.getElementById('player-hand');
     container.innerHTML = '';
@@ -61,11 +61,23 @@ function renderPlayerHand() {
     const total = cards.length;
     const cardWidth = 90; 
     
-    const angleRange = 40; 
+    // Динамическая настройка веера в зависимости от количества карт
+    let angleRange, overlap;
+
+    if (total <= 6) {
+        angleRange = 40; 
+        overlap = 50; // Высокое перекрытие (плотный веер)
+    } else if (total <= 10) {
+        angleRange = 60; 
+        overlap = 40; // Среднее перекрытие
+    } else { // 11+ карт
+        angleRange = 70; 
+        overlap = 30; // Минимальное перекрытие
+    }
+    
     const angleStep = total > 1 ? angleRange / (total - 1) : 0;
     const startAngle = -angleRange / 2;
 
-    const overlap = 35; 
     const handWidth = total * overlap + (cardWidth - overlap);
 
     cards.forEach((card, index) => {
@@ -86,18 +98,18 @@ function renderPlayerHand() {
     });
 }
 
-// Рендер руки соперника (ВЕРНУТ ВЕЕР)
+// Рендер руки соперника (ЦЕНТРОВКА И МЕНЬШИЙ ВЕЕР)
 function renderOpponent() {
     const container = document.getElementById('opponent-hand');
     container.innerHTML = '';
     
     const count = gameState.opponentHand.length;
-    // Параметры веера
-    const arcAngle = 30; 
+    // Параметры веера, соответствующие новому, меньшему размеру (см. styles.css .top-player .card-back)
+    const arcAngle = 40; // Чуть больше угол
     const startAngle = -arcAngle / 2;
     const step = count > 1 ? arcAngle / (count - 1) : 0;
-    const cardWidth = 50; 
-    const overlap = 20;
+    const cardWidth = 45; // Уменьшенная ширина рубашки
+    const overlap = 15; // Уменьшенное наложение
 
     const handWidth = count * overlap + (cardWidth - overlap);
 
@@ -108,12 +120,11 @@ function renderOpponent() {
         const rotate = count > 1 ? startAngle + (step * i) : 0;
         const xOffset = (i * overlap) - (handWidth / 2); // Центрирование
 
-        // Сдвиг Y, чтобы карты были видны в верхней зоне
+        // Сдвиг Y, чтобы карты были видны
         back.style.transform = `translateX(${xOffset}px) translateY(15px) rotate(${rotate}deg)`; 
         back.style.zIndex = i;
         container.appendChild(back);
     }
-    // Числовой счетчик удален.
 }
 
 function renderTable() {
@@ -123,9 +134,11 @@ function renderTable() {
         const pair = document.createElement('div');
         pair.className = 'card-pair';
         
+        // Атакующая карта (первая, z-index 1)
         const c1 = createCardElement(move.attacker);
         pair.appendChild(c1);
 
+        // Защищающая карта (вторая, z-index 2, с офсетом в CSS)
         if (move.defender) {
             const c2 = createCardElement(move.defender);
             pair.appendChild(c2);
@@ -134,24 +147,21 @@ function renderTable() {
     });
 }
 
-// Рендер колоды (Счетчик исправлен)
+// Рендер колоды (Без изменений)
 function renderDeck() {
     const container = document.getElementById('deck-zone');
     container.innerHTML = '';
     
-    // Козырь
     if (gameState.trump) {
         const trump = createCardElement(gameState.trump);
         trump.classList.add('trump-card');
         container.appendChild(trump);
     }
     
-    // Колода (Рубашка)
     if (gameState.deck.length > 0) {
         const stack = document.createElement('div');
         stack.className = 'card-back deck-stack';
 
-        // ДОБАВЛЯЕМ СЧЕТЧИК
         const countEl = document.createElement('div');
         countEl.className = 'deck-count';
         countEl.textContent = gameState.deck.length;
