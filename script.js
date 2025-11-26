@@ -13,17 +13,21 @@ let gameState = {
     activeCards: [], attacker: 'player' 
 };
 
-// --- Создание HTML карты (КЛАССИЧЕСКИЙ ДИЗАЙН) ---
-function createCardElement(card) {
+// --- Создание HTML карты (Классика с углами) ---
+function createCardElement(card, isBack = false) {
+    if (isBack) {
+        const el = document.createElement('div');
+        el.className = 'card-back';
+        return el;
+    }
+
     const el = document.createElement('div');
     el.className = 'card';
     el.dataset.id = card.id;
 
-    // Цвет
     if (card.suit === '♥' || card.suit === '♦') el.classList.add('red');
     else el.classList.add('black');
 
-    // HTML структура: Угол левый, Центр, Угол правый
     el.innerHTML = `
         <div class="corner top-left">
             <span>${card.value}</span>
@@ -48,35 +52,59 @@ function updateUI() {
     updateButtons();
 }
 
-// Рендер руки игрока (ВЕЕР)
+// Рендер руки игрока (КРАСИВЫЙ ВЕЕР)
 function renderPlayerHand() {
     const container = document.getElementById('player-hand');
     container.innerHTML = '';
     
     const cards = gameState.playerHand;
     const total = cards.length;
-    const middle = (total - 1) / 2;
+    // Угол раскрытия веера (градусы)
+    const arcAngle = 40; 
+    const startAngle = -arcAngle / 2;
+    const step = total > 1 ? arcAngle / (total - 1) : 0;
 
     cards.forEach((card, index) => {
         const el = createCardElement(card);
         el.classList.add('hand-card');
 
-        // Логика веера:
-        // Смещаем карты вправо (translateX), чтобы видеть левый угол
-        // Поворачиваем (rotate)
-        // Опускаем боковые карты (translateY)
+        // Вычисляем угол для каждой карты
+        const rotate = total > 1 ? startAngle + (step * index) : 0;
         
-        const offset = index - middle;
-        const rotate = offset * 5;  // Поворот 5 градусов
-        const x = offset * 40;      // Отступ 40px (достаточно чтобы видеть цифру)
-        const y = Math.abs(offset) * 15; // Арка
+        // Смещение по X (чтобы карты расходились)
+        // Для 10 карт нужно меньше места между ними, чем для 2
+        const xOffset = (index - (total - 1) / 2) * 35; // 35px расстояние
+        const yOffset = Math.abs(index - (total - 1) / 2) * 5; // Небольшая арка
 
-        el.style.transform = `translateX(${x}px) translateY(${y}px) rotate(${rotate}deg)`;
-        el.style.zIndex = index; // Каждая следующая карта поверх предыдущей
+        el.style.transform = `translateX(-50%) translateX(${xOffset}px) translateY(${yOffset}px) rotate(${rotate}deg)`;
+        el.style.zIndex = index; 
 
         el.onclick = () => onCardClick(card.id);
         container.appendChild(el);
     });
+}
+
+// Рендер руки соперника (ТОЖЕ ВЕЕР, но рубашками)
+function renderOpponent() {
+    const container = document.getElementById('opponent-hand');
+    container.innerHTML = '';
+    
+    const count = gameState.opponentHand.length;
+    // Меньший угол для соперника
+    const arcAngle = 30; 
+    const startAngle = -arcAngle / 2;
+    const step = count > 1 ? arcAngle / (count - 1) : 0;
+
+    for(let i=0; i<count; i++) {
+        const back = document.createElement('div');
+        back.className = 'card-back';
+        
+        const rotate = count > 1 ? startAngle + (step * i) : 0;
+        const xOffset = (i - (count - 1) / 2) * 15; // Карты бота плотнее
+
+        back.style.transform = `translateX(${xOffset}px) rotate(${rotate}deg)`;
+        container.appendChild(back);
+    }
 }
 
 function renderTable() {
@@ -86,11 +114,9 @@ function renderTable() {
         const pair = document.createElement('div');
         pair.className = 'card-pair';
         
-        // Атака
         const c1 = createCardElement(move.attacker);
         pair.appendChild(c1);
 
-        // Защита
         if (move.defender) {
             const c2 = createCardElement(move.defender);
             pair.appendChild(c2);
@@ -99,26 +125,18 @@ function renderTable() {
     });
 }
 
-function renderOpponent() {
-    const container = document.getElementById('opponent-hand');
-    container.innerHTML = '';
-    for(let i=0; i<gameState.opponentHand.length; i++) {
-        const back = document.createElement('div');
-        back.className = 'card-back';
-        container.appendChild(back);
-    }
-}
-
 function renderDeck() {
     const container = document.getElementById('deck-zone');
     container.innerHTML = '';
     
+    // Козырь
     if (gameState.trump) {
         const trump = createCardElement(gameState.trump);
         trump.classList.add('trump-card');
         container.appendChild(trump);
     }
     
+    // Колода (Рубашка)
     if (gameState.deck.length > 0) {
         const stack = document.createElement('div');
         stack.className = 'card-back deck-stack';
@@ -134,13 +152,10 @@ function updateButtons() {
     passBtn.style.display = 'none';
 
     if (gameState.activeCards.length > 0) {
-        // Если атакует бот -> Мы берем
         if (gameState.attacker === 'opponent') {
             takeBtn.style.display = 'block';
         } 
-        // Если атакуем мы
         else if (gameState.attacker === 'player') {
-            // Если последняя карта отбита -> Можно Бито
             const last = gameState.activeCards[gameState.activeCards.length - 1];
             if (last && last.defender) {
                 passBtn.style.display = 'block';
@@ -155,12 +170,10 @@ function onCardClick(id) {
     tg.HapticFeedback.impactOccurred('light');
 
     if (gameState.activeCards.length === 0) {
-        // Первый ход
         if (gameState.attacker === 'player') makeMove(id);
     } else {
-        // Бой
-        if (gameState.attacker === 'player') makeMove(id); // Подкинуть
-        else playerDefend(id); // Отбиться
+        if (gameState.attacker === 'player') makeMove(id);
+        else playerDefend(id);
     }
 }
 
@@ -169,7 +182,6 @@ function makeMove(id) {
     if (idx === -1) return;
     const card = gameState.playerHand[idx];
 
-    // Проверка подкидывания
     if (gameState.activeCards.length > 0) {
         const validValues = gameState.activeCards.flatMap(m => [m.attacker.value, m.defender?.value]).filter(v=>v);
         if (!validValues.includes(card.value)) {
@@ -184,7 +196,6 @@ function makeMove(id) {
     gameState.attacker = 'opponent'; 
     updateUI();
     
-    // Бот думает
     setTimeout(botPlay, 1000);
 }
 
@@ -196,14 +207,12 @@ function playerDefend(id) {
     if (canBeat(lastMove.attacker, card)) {
         gameState.playerHand.splice(idx, 1);
         lastMove.defender = card;
-        gameState.attacker = 'player'; // Ждем БИТО
+        gameState.attacker = 'player'; 
         updateUI();
     } else {
         tg.HapticFeedback.impactOccurred('error');
     }
 }
-
-// --- ВСПОМОГАТЕЛЬНЫЕ ---
 
 function canBeat(atk, def) {
     if (atk.suit === def.suit) return values.indexOf(def.value) > values.indexOf(atk.value);
@@ -222,24 +231,22 @@ function createDeckStruct() {
 function botPlay() {
     if (gameState.attacker !== 'opponent') return;
 
-    // 1. Атака (стол пуст)
     if (gameState.activeCards.length === 0) {
         if (gameState.opponentHand.length === 0) return;
-        const card = gameState.opponentHand.shift(); // Берем первую
+        const card = gameState.opponentHand.shift(); 
         gameState.activeCards.push({ attacker: card, defender: null });
         gameState.attacker = 'player';
         updateUI();
         return;
     }
 
-    // 2. Защита
     const last = gameState.activeCards[gameState.activeCards.length - 1];
     if (!last.defender) {
         let defIdx = gameState.opponentHand.findIndex(c => canBeat(last.attacker, c));
         if (defIdx !== -1) {
             const card = gameState.opponentHand.splice(defIdx, 1)[0];
             last.defender = card;
-            gameState.attacker = 'player'; // Отбился
+            gameState.attacker = 'player';
             updateUI();
         } else {
             botTake();
@@ -288,14 +295,12 @@ function drawCards() {
 
 // --- START ---
 let deck = createDeckStruct();
-// Перемешка
 for (let i = deck.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [deck[i], deck[j]] = [deck[j], deck[i]];
 }
 
 gameState.deck = deck;
-// Раздача
 for(let i=0; i<6; i++) {
     gameState.playerHand.push(gameState.deck.pop());
     gameState.opponentHand.push(gameState.deck.pop());
