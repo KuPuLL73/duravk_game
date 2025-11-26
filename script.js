@@ -255,8 +255,8 @@ function renderPlayerHand() {
         const middle = (totalCards - 1) / 2;
         
         // Уменьшаем угол и смещение для мобильного веера
-        const rotateAngle = (index - middle) * 4; // Было 7
-        const translateY = Math.abs(index - middle) * 3; // Было 5
+        const rotateAngle = (index - middle) * 5; // Было 7
+        const translateY = Math.abs(index - middle) * 5; // Было 5
         
         // Добавляем Z-Index, чтобы карты не слипались в неправильном порядке
         cardEl.style.zIndex = index + 10; 
@@ -549,3 +549,4 @@ tg.ready();
 if (tg.isExpanded === false) {
     tg.expand();
 }
+
