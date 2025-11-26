@@ -62,6 +62,22 @@ function canBeat(attacker, defender, trumpSuit) {
     return values.indexOf(defender.value) > values.indexOf(attacker.value);
 }
 
+// *** НОВАЯ ЛОГИКА ***: Проверка возможности подкидывания
+function isCardValidForThrowIn(card) {
+    if (gameState.activeCards.length === 0) {
+        // Если стол пуст, это первый ход, любая карта подходит
+        return true;
+    }
+    
+    // Проверяем, совпадает ли номинал атакуемой карты с любой картой на столе
+    const activeValues = gameState.activeCards.flatMap(move => [
+        move.attacker.value, 
+        move.defender ? move.defender.value : null
+    ]).filter(v => v !== null);
+
+    return activeValues.includes(card.value);
+}
+
 // Проверка условия победы
 function checkWinCondition() {
     const deckEmpty = gameState.deck.length === 0;
@@ -155,6 +171,8 @@ function botDefend() {
         console.log(`🤖 Бот отбился: ${cardToDefend.value}${cardToDefend.suit} побила ${currentAttacker.value}${currentAttacker.suit}.`);
         
         checkWinCondition(); 
+        
+        // В упрощенной логике, даем ход обратно игроку, чтобы нажать "Бито"
         gameState.attacker = 'player';
         
     } else {
@@ -232,23 +250,33 @@ function renderPlayerHand() {
         const cardEl = createCardElement(cardData);
         cardEl.classList.add('hand-card'); 
         
+        // *** ИСПРАВЛЕНИЕ: Плотный веер и Z-Index для видимости ***
         const totalCards = myCards.length;
         const middle = (totalCards - 1) / 2;
-        const rotateAngle = (index - middle) * 7; 
-        const translateY = Math.abs(index - middle) * 5;
+        
+        // Уменьшаем угол и смещение для мобильного веера
+        const rotateAngle = (index - middle) * 4; // Было 7
+        const translateY = Math.abs(index - middle) * 3; // Было 5
+        
+        // Добавляем Z-Index, чтобы карты не слипались в неправильном порядке
+        cardEl.style.zIndex = index + 10; 
+
         cardEl.style.transform = `rotate(${rotateAngle}deg) translateY(${translateY}px)`;
 
         cardEl.addEventListener('click', () => {
-            // Исправленный код: теперь tg точно определен
             tg.HapticFeedback.impactOccurred('light');
             
-            if (gameState.attacker === 'opponent') {
-                if (gameState.activeCards.length === 0) {
-                    console.log("Сейчас ход соперника, вы не можете ходить.");
-                } else {
-                    handleDefense(cardData.id); 
-                }
+            // Если активно идет бой (карта на столе)
+            if (gameState.activeCards.length > 0) {
+                 if (gameState.attacker === 'player') {
+                     // Если игрок атакующий, это попытка подкинуть карту
+                     makeMove(cardData.id);
+                 } else {
+                     // Если бот атакующий, это попытка отбиться
+                     handleDefense(cardData.id);
+                 }
             } else {
+                // Если стол пуст, это всегда первый ход
                 makeMove(cardData.id);
             }
         });
@@ -309,9 +337,12 @@ function renderTable() {
     });
 }
 
+// *** ИСПРАВЛЕНИЕ: makeMove теперь проверяет правила подкидывания ***
 function makeMove(cardId) {
-    if (gameState.attacker !== 'player') {
-        console.log("Сейчас не ваш ход.");
+    if (gameState.attacker !== 'player' && gameState.activeCards.length > 0) {
+        // Игрок не может ходить, если он не атакующий, и на столе уже есть карта.
+        // Он может только отбиваться (что обрабатывается в handleDefense) или нажать БИТО/БЕРУ.
+        console.log("Сейчас не ваш ход для атаки/подкидывания.");
         return;
     }
     
@@ -320,7 +351,17 @@ function makeMove(cardId) {
     const cardIndex = gameState.playerHand.findIndex(card => card.id == cardId);
     if (cardIndex === -1) return;
 
-    const cardToMove = gameState.playerHand.splice(cardIndex, 1)[0];
+    const cardToMove = gameState.playerHand[cardIndex];
+
+    // Проверка правила: подкидывать можно только номиналы со стола
+    if (!isCardValidForThrowIn(cardToMove)) {
+        console.log(`❌ Нельзя подкинуть: ${cardToMove.value}${cardToMove.suit}. Нет такой карты на столе.`);
+        tg.HapticFeedback.impactOccurred('error'); 
+        return;
+    }
+
+    // Если проверка пройдена, делаем ход
+    gameState.playerHand.splice(cardIndex, 1);
     
     gameState.activeCards.push({
         attacker: cardToMove,
@@ -337,40 +378,46 @@ function makeMove(cardId) {
     gameState.attacker = 'opponent'; 
     console.log('Ход перешел к ЗАЩИТНИКУ (Бот).');
 
-    botPlay();
+    // Если игрок только что походил (или подкинул) на пустой стол
+    if (gameState.activeCards.length === 1 && gameState.attacker === 'opponent') {
+        botPlay();
+    }
 }
 
 function handleDefense(cardId) {
-    if (gameState.attacker !== 'player' && gameState.activeCards.length > 0) {
-        
-        const lastMoveIndex = gameState.activeCards.length - 1;
-        const currentAttacker = gameState.activeCards[lastMoveIndex].attacker;
-
-        const defenderIndex = gameState.playerHand.findIndex(card => card.id == cardId);
-        if (defenderIndex === -1) return;
-        const cardToDefend = gameState.playerHand[defenderIndex];
-        
-        if (canBeat(currentAttacker, cardToDefend, gameState.trumpSuit)) {
-            gameState.playerHand.splice(defenderIndex, 1);
-            gameState.activeCards[lastMoveIndex].defender = cardToDefend;
-            
-            console.log(`✅ Игрок отбился: ${cardToDefend.value}${cardToDefend.suit} побила ${currentAttacker.value}${currentAttacker.suit}.`);
-            
-            checkWinCondition(); 
-            
-            gameState.attacker = 'opponent'; 
-            console.log('Ход перешел к АТАКУЮЩЕМУ (Бот) для подкидывания.');
-            
-        } else {
-            console.log(`❌ Нельзя отбиться: ${cardToDefend.value}${cardToDefend.suit} не бьет ${currentAttacker.value}${currentAttacker.suit}.`);
-            return;
-        }
-
-        renderPlayerHand(); 
-        renderTable(); 
-    } else {
-        makeMove(cardId);
+    // Проверяем, что игрок сейчас должен защищаться
+    if (gameState.activeCards.length === 0 || gameState.attacker !== 'opponent') {
+        console.log("Вы не можете отбиваться, т.к. сейчас не атака бота.");
+        return;
     }
+    
+    const lastMoveIndex = gameState.activeCards.length - 1;
+    const currentAttacker = gameState.activeCards[lastMoveIndex].attacker;
+
+    const defenderIndex = gameState.playerHand.findIndex(card => card.id == cardId);
+    if (defenderIndex === -1) return;
+    const cardToDefend = gameState.playerHand[defenderIndex];
+    
+    if (canBeat(currentAttacker, cardToDefend, gameState.trumpSuit)) {
+        gameState.playerHand.splice(defenderIndex, 1);
+        gameState.activeCards[lastMoveIndex].defender = cardToDefend;
+        
+        console.log(`✅ Игрок отбился: ${cardToDefend.value}${cardToDefend.suit} побила ${currentAttacker.value}${currentAttacker.suit}.`);
+        
+        checkWinCondition(); 
+        
+        // *** ИСПРАВЛЕНИЕ: Передаем ход игроку, чтобы нажать БИТО/подкинуть ***
+        gameState.attacker = 'player'; 
+        console.log('Ход перешел к игроку для выбора БИТО или ПОДКИДЫВАНИЯ.');
+        
+    } else {
+        console.log(`❌ Нельзя отбиться: ${cardToDefend.value}${cardToDefend.suit} не бьет ${currentAttacker.value}${currentAttacker.suit}.`);
+        tg.HapticFeedback.impactOccurred('error');
+        return;
+    }
+
+    renderPlayerHand(); 
+    renderTable(); 
 }
 
 function endMove() {
@@ -378,11 +425,12 @@ function endMove() {
         console.log("На столе нет карт, чтобы сказать 'Бито'.");
         return;
     }
+    
+    // После "Бито" атакует следующий игрок (сейчас это бот)
+    gameState.attacker = 'opponent'; 
 
     drawCards('playerHand');
     drawCards('opponentHand');
-
-    gameState.attacker = 'opponent';
     
     gameState.activeCards = []; 
     console.log("Бито! Стол очищен. Ход переходит к сопернику.");
@@ -391,7 +439,7 @@ function endMove() {
     renderPlayerHand();
     renderTable();
     
-    botPlay();
+    botPlay(); // Бот делает ход, как новый атакующий
 }
 
 function takeCards() {
@@ -417,18 +465,18 @@ function takeCards() {
 
     console.log(`Игрок взял карты со стола. Теперь в руке: ${gameState.playerHand.length} карт.`);
 
+    // После "Беру" атакует следующий игрок (сейчас это бот)
+    gameState.attacker = 'opponent'; 
+
     drawCards('opponentHand');
     drawCards('playerHand');
-    
-    gameState.attacker = 'opponent'; 
     
     renderGameStatic();
     renderPlayerHand();
     renderTable();
     
-    botPlay();
+    botPlay(); // Бот делает ход, как новый атакующий
 }
-
 
 function openSkinShop() {
     let message = '';
@@ -496,7 +544,7 @@ document.getElementById('passBtn').addEventListener('click', endMove);
 // Инициализация игры
 initGame();
 
-// Безопасный вызов Telegram API
+// Безопасный вызов Telegram API (должен быть тут)
 tg.ready();
 if (tg.isExpanded === false) {
     tg.expand();
