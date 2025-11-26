@@ -66,13 +66,13 @@ function renderPlayerHand() {
 
     if (total <= 6) {
         angleRange = 40; 
-        overlap = 50; // Высокое перекрытие (плотный веер)
+        overlap = 50; 
     } else if (total <= 10) {
         angleRange = 60; 
-        overlap = 40; // Среднее перекрытие
-    } else { // 11+ карт
+        overlap = 40; 
+    } else { 
         angleRange = 70; 
-        overlap = 30; // Минимальное перекрытие
+        overlap = 30; 
     }
     
     const angleStep = total > 1 ? angleRange / (total - 1) : 0;
@@ -98,18 +98,18 @@ function renderPlayerHand() {
     });
 }
 
-// Рендер руки соперника (ЦЕНТРОВКА И МЕНЬШИЙ ВЕЕР)
+// Рендер руки соперника
 function renderOpponent() {
     const container = document.getElementById('opponent-hand');
     container.innerHTML = '';
     
     const count = gameState.opponentHand.length;
-    // Параметры веера, соответствующие новому, меньшему размеру (см. styles.css .top-player .card-back)
-    const arcAngle = 40; // Чуть больше угол
+    
+    const arcAngle = 40; 
     const startAngle = -arcAngle / 2;
     const step = count > 1 ? arcAngle / (count - 1) : 0;
-    const cardWidth = 45; // Уменьшенная ширина рубашки
-    const overlap = 15; // Уменьшенное наложение
+    const cardWidth = 45; 
+    const overlap = 15; 
 
     const handWidth = count * overlap + (cardWidth - overlap);
 
@@ -118,9 +118,8 @@ function renderOpponent() {
         back.className = 'card-back';
         
         const rotate = count > 1 ? startAngle + (step * i) : 0;
-        const xOffset = (i * overlap) - (handWidth / 2); // Центрирование
+        const xOffset = (i * overlap) - (handWidth / 2); 
 
-        // Сдвиг Y, чтобы карты были видны
         back.style.transform = `translateX(${xOffset}px) translateY(15px) rotate(${rotate}deg)`; 
         back.style.zIndex = i;
         container.appendChild(back);
@@ -134,11 +133,9 @@ function renderTable() {
         const pair = document.createElement('div');
         pair.className = 'card-pair';
         
-        // Атакующая карта (первая, z-index 1)
         const c1 = createCardElement(move.attacker);
         pair.appendChild(c1);
 
-        // Защищающая карта (вторая, z-index 2, с офсетом в CSS)
         if (move.defender) {
             const c2 = createCardElement(move.defender);
             pair.appendChild(c2);
@@ -147,7 +144,6 @@ function renderTable() {
     });
 }
 
-// Рендер колоды (Без изменений)
 function renderDeck() {
     const container = document.getElementById('deck-zone');
     container.innerHTML = '';
@@ -180,27 +176,31 @@ function updateButtons() {
 
     if (gameState.activeCards.length > 0) {
         if (gameState.attacker === 'opponent') {
+            // Кнопка "БЕРУ" появляется, когда игрок защищается
             takeBtn.style.display = 'block';
         } 
         else if (gameState.attacker === 'player') {
-            const last = gameState.activeCards[gameState.activeCards.length - 1];
-            if (last && last.defender) {
+            // Кнопка "БИТО" появляется, когда игрок атакует и все карты покрыты
+            const allDefended = gameState.activeCards.every(m => m.defender);
+            if (allDefended) {
                 passBtn.style.display = 'block';
             }
         }
     }
 }
 
-// --- ИГРОВАЯ ЛОГИКА (Не изменена) ---
+// --- ИГРОВАЯ ЛОГИКА ---
 
 function onCardClick(id) {
     tg.HapticFeedback.impactOccurred('light');
 
     if (gameState.activeCards.length === 0) {
+        // Начало атаки игрока
         if (gameState.attacker === 'player') makeMove(id);
     } else {
+        // Подбрасывание или защита
         if (gameState.attacker === 'player') makeMove(id);
-        else playerDefend(id);
+        else playerDefend(id); // Игрок защищается
     }
 }
 
@@ -209,6 +209,7 @@ function makeMove(id) {
     if (idx === -1) return;
     const card = gameState.playerHand[idx];
 
+    // Проверка на возможность подбрасывания
     if (gameState.activeCards.length > 0) {
         const validValues = gameState.activeCards.flatMap(m => [m.attacker.value, m.defender?.value]).filter(v=>v);
         if (!validValues.includes(card.value)) {
@@ -220,22 +221,39 @@ function makeMove(id) {
     gameState.playerHand.splice(idx, 1);
     gameState.activeCards.push({ attacker: card, defender: null });
     
-    gameState.attacker = 'opponent'; 
+    // Если игрок только начал атаку, ход переходит к защитнику-боту.
+    if (gameState.activeCards.length === 1 && gameState.attacker === 'player') {
+        gameState.attacker = 'opponent'; 
+    }
+
     updateUI();
     
-    setTimeout(botPlay, 1000);
+    // Если карты не покрыты, бот должен защищаться немедленно
+    if (gameState.attacker === 'opponent') {
+        setTimeout(botPlay, 1000);
+    }
 }
 
+// ФИКС ОШИБКИ: Игрок остается защитником
 function playerDefend(id) {
+    // Проверка, что игрок действительно защищается (есть непокрытая карта)
+    const lastUncovered = gameState.activeCards.find(m => !m.defender);
+    if (!lastUncovered) return; // Все покрыто, это ошибка клика
+
     const idx = gameState.playerHand.findIndex(c => c.id == id);
     const card = gameState.playerHand[idx];
-    const lastMove = gameState.activeCards[gameState.activeCards.length - 1];
-
-    if (canBeat(lastMove.attacker, card)) {
+    
+    if (canBeat(lastUncovered.attacker, card)) {
         gameState.playerHand.splice(idx, 1);
-        lastMove.defender = card;
-        gameState.attacker = 'player'; 
+        lastUncovered.defender = card;
+        
+        // !!! КЛЮЧЕВОЙ ФИКС: НЕ МЕНЯЕМ gameState.attacker. Игрок все еще защитник.
+        
         updateUI();
+
+        // После успешной защиты, бот (атакующий) решает, подкинуть ли еще карту.
+        setTimeout(botThrowInNextCard, 500); 
+        
     } else {
         tg.HapticFeedback.impactOccurred('error');
     }
@@ -253,32 +271,91 @@ function createDeckStruct() {
     return d;
 }
 
-// --- БОТ ---
-function botPlay() {
-    if (gameState.attacker !== 'opponent') return;
+// --- ЛОГИКА БОТА ---
 
-    if (gameState.activeCards.length === 0) {
-        if (gameState.opponentHand.length === 0) return;
-        const card = gameState.opponentHand.shift(); 
+// НОВАЯ ФУНКЦИЯ: Бот подкидывает карту после успешной защиты игрока
+function botThrowInNextCard() {
+    if (gameState.attacker !== 'opponent') return; 
+
+    // 1. Собираем все ранги на столе
+    const tableValues = gameState.activeCards.flatMap(m => [m.attacker.value, m.defender?.value]).filter(v => v);
+
+    // 2. Ищем карту, которую бот может подкинуть
+    let throwInCardIdx = gameState.opponentHand.findIndex(card => tableValues.includes(card.value));
+    
+    // 3. Проверка лимитов защиты
+    const totalCardsOnTable = gameState.activeCards.length * 2; // Максимум, сколько уже лежит
+    const maxAttackLimit = Math.min(6, gameState.playerHand.length); // Максимальное число карт для подбрасывания
+
+    if (throwInCardIdx !== -1 && gameState.activeCards.length < maxAttackLimit) {
+        const card = gameState.opponentHand.splice(throwInCardIdx, 1)[0];
         gameState.activeCards.push({ attacker: card, defender: null });
-        gameState.attacker = 'player';
+        
+        // Состояние остается прежним: игрок должен защищаться.
         updateUI();
+    } else {
+        // Бот не может или не хочет больше подкидывать. Атака завершена.
+        // Передаем ход игроку, чтобы он нажал "БИТО".
+        gameState.attacker = 'player'; 
+        updateUI();
+    }
+}
+
+// Бот защищается (когда игрок атаковал) или атакует с нуля (когда игрок забрал)
+function botPlay() {
+    if (gameState.attacker !== 'opponent') {
+        // Если бот должен атаковать с нуля (после того как игрок забрал)
+        if (gameState.activeCards.length === 0) {
+            if (gameState.opponentHand.length === 0) return;
+            const card = gameState.opponentHand.shift(); 
+            gameState.activeCards.push({ attacker: card, defender: null });
+            gameState.attacker = 'player'; // Игрок должен защищаться
+            updateUI();
+        }
         return;
     }
 
+    // Если бот должен защищаться (когда игрок атакует)
     const last = gameState.activeCards[gameState.activeCards.length - 1];
-    if (!last.defender) {
+    if (last && !last.defender) {
         let defIdx = gameState.opponentHand.findIndex(c => canBeat(last.attacker, c));
+        
         if (defIdx !== -1) {
+            // Успешная защита
             const card = gameState.opponentHand.splice(defIdx, 1)[0];
             last.defender = card;
-            gameState.attacker = 'player';
+            
+            gameState.attacker = 'player'; // После успешной защиты бот может подкинуть (игрок будет в makeMove)
             updateUI();
+            
+            // Бот может подкинуть больше карт.
+            setTimeout(botThrowInNextCardForDefense, 500); 
+
         } else {
+            // Бот не может защититься -> Бот берет.
             botTake();
         }
     }
 }
+
+// Добавим отдельную функцию для подбрасывания ботом, когда он защищается
+function botThrowInNextCardForDefense() {
+    if (gameState.attacker !== 'player') return; // Только если игрок атакует
+
+    const tableValues = gameState.activeCards.flatMap(m => [m.attacker.value, m.defender?.value]).filter(v => v);
+    
+    let throwInCardIdx = gameState.playerHand.findIndex(card => tableValues.includes(card.value));
+    
+    if (throwInCardIdx !== -1) {
+        // Если игрок может подкинуть, он ждет клика. 
+        // Если нет, бот (защитник) ничего не делает, ждет клика "БИТО" от игрока.
+        // Здесь мы просто выходим, полагаясь на клик игрока (makeMove).
+        return;
+    } else {
+        // Игрок не может больше подкидывать. Бот (защитник) ждет клика "БИТО"
+    }
+}
+
 
 function botTake() {
     gameState.activeCards.forEach(m => {
@@ -287,7 +364,7 @@ function botTake() {
     });
     gameState.activeCards = [];
     drawCards();
-    gameState.attacker = 'player';
+    gameState.attacker = 'player'; // Игрок начинает следующую атаку
     updateUI();
 }
 
@@ -300,7 +377,7 @@ document.getElementById('takeBtn').onclick = () => {
     });
     gameState.activeCards = [];
     drawCards();
-    gameState.attacker = 'opponent';
+    gameState.attacker = 'opponent'; // Бот начинает следующую атаку
     updateUI();
     setTimeout(botPlay, 1000);
 };
@@ -308,9 +385,16 @@ document.getElementById('takeBtn').onclick = () => {
 document.getElementById('passBtn').onclick = () => {
     gameState.activeCards = [];
     drawCards();
-    gameState.attacker = 'opponent';
+    // Если игрок был атакующим, он пропускает ход. Начинает бот.
+    if (gameState.attacker === 'player') { 
+        gameState.attacker = 'opponent'; 
+        setTimeout(botPlay, 1000);
+    } 
+    // Если игрок был защитником (после того как бот остановился), он пропускает ход. Начинает игрок.
+    else if (gameState.attacker === 'opponent') {
+        gameState.attacker = 'player';
+    }
     updateUI();
-    setTimeout(botPlay, 1000);
 };
 
 function drawCards() {
