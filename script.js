@@ -5,9 +5,9 @@ const tg = window.Telegram.WebApp;
 const suits = ['♠', '♥', '♦', '♣'];
 const values = ['6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
 
+// Упрощенный профиль, т.к. скины удалены
 const playerProfile = {
     balance: 100,
-    inventory: ['default', 'skin-cyberpunk', 'skin-gold'],
     activeSkin: 'default' 
 };
 
@@ -62,14 +62,12 @@ function canBeat(attacker, defender, trumpSuit) {
     return values.indexOf(defender.value) > values.indexOf(attacker.value);
 }
 
-// *** НОВАЯ ЛОГИКА ***: Проверка возможности подкидывания
+// Проверка возможности подкидывания
 function isCardValidForThrowIn(card) {
     if (gameState.activeCards.length === 0) {
-        // Если стол пуст, это первый ход, любая карта подходит
         return true;
     }
     
-    // Проверяем, совпадает ли номинал атакуемой карты с любой картой на столе
     const activeValues = gameState.activeCards.flatMap(move => [
         move.attacker.value, 
         move.defender ? move.defender.value : null
@@ -83,13 +81,11 @@ function checkWinCondition() {
     const deckEmpty = gameState.deck.length === 0;
 
     if (gameState.playerHand.length === 0 && deckEmpty) {
-        console.log("🎉 Игрок победил! Вы вышли!");
         alert("🎉 ПОБЕДА! Вы вышли из игры!");
         return true;
     }
     
     if (gameState.opponentHand.length === 0 && deckEmpty) {
-        console.log("😭 Соперник победил! Бот вышел!");
         alert("😭 ПОРАЖЕНИЕ! Соперник вышел из игры.");
         return true;
     }
@@ -111,7 +107,6 @@ function drawCards(playerKey) {
         return values.indexOf(a.value) - values.indexOf(b.value);
     });
 
-    console.log(`[Добор] ${playerKey === 'playerHand' ? 'Игрок' : 'Соперник'} добрал карты. В руке: ${hand.length}`);
     checkWinCondition(); 
 }
 
@@ -119,8 +114,6 @@ function drawCards(playerKey) {
 // --- ЛОГИКА ИИ СОПЕРНИКА (БОТ) ---
 
 function botTakeCards() {
-    console.log(`🤖 Бот забирает карты со стола.`);
-    
     gameState.activeCards.forEach(move => {
         gameState.opponentHand.push(move.attacker);
         if (move.defender) {
@@ -141,11 +134,10 @@ function botTakeCards() {
 
     gameState.attacker = 'player'; 
     
-    console.log(`Бот взял карты. Теперь ходит игрок.`);
-    
     renderGameStatic();
     renderTable(); 
     renderPlayerHand();
+    updateMoveButtonsVisibility();
 }
 
 function botDefend() {
@@ -168,8 +160,6 @@ function botDefend() {
         gameState.opponentHand.splice(cardIndex, 1);
         gameState.activeCards[lastMoveIndex].defender = cardToDefend;
         
-        console.log(`🤖 Бот отбился: ${cardToDefend.value}${cardToDefend.suit} побила ${currentAttacker.value}${currentAttacker.suit}.`);
-        
         checkWinCondition(); 
         
         // В упрощенной логике, даем ход обратно игроку, чтобы нажать "Бито"
@@ -177,11 +167,13 @@ function botDefend() {
         
     } else {
         botTakeCards();
+        return; // Выходим, так как botTakeCards вызовет рендер и обновление кнопок
     }
 
     renderGameStatic();
     renderTable(); 
     renderPlayerHand(); 
+    updateMoveButtonsVisibility();
 }
 
 function botAttack() {
@@ -194,14 +186,13 @@ function botAttack() {
         defender: null
     });
 
-    console.log(`🤖 Бот пошел: ${cardToAttack.value}${cardToAttack.suit}.`);
-    
     checkWinCondition(); 
 
     gameState.attacker = 'player'; 
 
     renderGameStatic(); 
     renderTable();      
+    updateMoveButtonsVisibility();
 }
 
 function botPlay() {
@@ -223,10 +214,6 @@ function createCardElement(card) {
     cardDiv.classList.add('card');
     cardDiv.dataset.cardId = card.id;
     
-    if (playerProfile.activeSkin !== 'default') {
-        cardDiv.classList.add(playerProfile.activeSkin);
-    }
-
     const isRed = (card.suit === '♥' || card.suit === '♦');
     cardDiv.classList.add(isRed ? 'red' : 'black');
 
@@ -241,6 +228,33 @@ function createCardElement(card) {
     return cardDiv;
 }
 
+// *** НОВАЯ ФУНКЦИЯ: Управление видимостью кнопок хода ***
+function updateMoveButtonsVisibility() {
+    const moveBtnsEl = document.getElementById('move-btns');
+    let shouldShow = false;
+
+    if (gameState.activeCards.length > 0) {
+        // Если на столе есть карты:
+        if (gameState.attacker === 'opponent') {
+            // Если бот атакует, мы можем только "Беру" и "Бито" (если отбились)
+            shouldShow = true; 
+        } else if (gameState.attacker === 'player') {
+            // Если мы атакуем: показываем "Бито", если последняя карта отбита
+            const lastMove = gameState.activeCards[gameState.activeCards.length - 1];
+            if (lastMove && lastMove.defender) {
+                 shouldShow = true;
+            }
+        }
+    }
+
+    if (shouldShow) {
+        moveBtnsEl.style.visibility = 'visible';
+    } else {
+        moveBtnsEl.style.visibility = 'hidden';
+    }
+}
+
+
 function renderPlayerHand() {
     const container = document.getElementById('player-hand');
     container.innerHTML = ''; 
@@ -250,15 +264,13 @@ function renderPlayerHand() {
         const cardEl = createCardElement(cardData);
         cardEl.classList.add('hand-card'); 
         
-        // *** ИСПРАВЛЕНИЕ: Плотный веер и Z-Index для видимости ***
+        // *** ИСПРАВЛЕНИЕ: Параметры веера для лучшей видимости ***
         const totalCards = myCards.length;
         const middle = (totalCards - 1) / 2;
         
-        // Уменьшаем угол и смещение для мобильного веера
-        const rotateAngle = (index - middle) * 5; // Было 7
-        const translateY = Math.abs(index - middle) * 5; // Было 5
+        const rotateAngle = (index - middle) * 5; // Было 4, стало 5
+        const translateY = Math.abs(index - middle) * 5; // Было 3, стало 5
         
-        // Добавляем Z-Index, чтобы карты не слипались в неправильном порядке
         cardEl.style.zIndex = index + 10; 
 
         cardEl.style.transform = `rotate(${rotateAngle}deg) translateY(${translateY}px)`;
@@ -266,17 +278,16 @@ function renderPlayerHand() {
         cardEl.addEventListener('click', () => {
             tg.HapticFeedback.impactOccurred('light');
             
-            // Если активно идет бой (карта на столе)
             if (gameState.activeCards.length > 0) {
                  if (gameState.attacker === 'player') {
-                     // Если игрок атакующий, это попытка подкинуть карту
+                     // Игрок подкидывает
                      makeMove(cardData.id);
                  } else {
-                     // Если бот атакующий, это попытка отбиться
+                     // Игрок отбивается
                      handleDefense(cardData.id);
                  }
             } else {
-                // Если стол пуст, это всегда первый ход
+                // Первый ход на пустой стол
                 makeMove(cardData.id);
             }
         });
@@ -337,12 +348,8 @@ function renderTable() {
     });
 }
 
-// *** ИСПРАВЛЕНИЕ: makeMove теперь проверяет правила подкидывания ***
 function makeMove(cardId) {
     if (gameState.attacker !== 'player' && gameState.activeCards.length > 0) {
-        // Игрок не может ходить, если он не атакующий, и на столе уже есть карта.
-        // Он может только отбиваться (что обрабатывается в handleDefense) или нажать БИТО/БЕРУ.
-        console.log("Сейчас не ваш ход для атаки/подкидывания.");
         return;
     }
     
@@ -353,14 +360,11 @@ function makeMove(cardId) {
 
     const cardToMove = gameState.playerHand[cardIndex];
 
-    // Проверка правила: подкидывать можно только номиналы со стола
     if (!isCardValidForThrowIn(cardToMove)) {
-        console.log(`❌ Нельзя подкинуть: ${cardToMove.value}${cardToMove.suit}. Нет такой карты на столе.`);
         tg.HapticFeedback.impactOccurred('error'); 
         return;
     }
 
-    // Если проверка пройдена, делаем ход
     gameState.playerHand.splice(cardIndex, 1);
     
     gameState.activeCards.push({
@@ -368,26 +372,22 @@ function makeMove(cardId) {
         defender: null
     });
 
-    console.log(`Ход сделан: ${cardToMove.value}${cardToMove.suit}.`);
-    
     checkWinCondition();
 
     renderPlayerHand(); 
     renderTable();      
     
     gameState.attacker = 'opponent'; 
-    console.log('Ход перешел к ЗАЩИТНИКУ (Бот).');
-
-    // Если игрок только что походил (или подкинул) на пустой стол
+    
     if (gameState.activeCards.length === 1 && gameState.attacker === 'opponent') {
         botPlay();
     }
+    
+    updateMoveButtonsVisibility();
 }
 
 function handleDefense(cardId) {
-    // Проверяем, что игрок сейчас должен защищаться
     if (gameState.activeCards.length === 0 || gameState.attacker !== 'opponent') {
-        console.log("Вы не можете отбиваться, т.к. сейчас не атака бота.");
         return;
     }
     
@@ -402,49 +402,42 @@ function handleDefense(cardId) {
         gameState.playerHand.splice(defenderIndex, 1);
         gameState.activeCards[lastMoveIndex].defender = cardToDefend;
         
-        console.log(`✅ Игрок отбился: ${cardToDefend.value}${cardToDefend.suit} побила ${currentAttacker.value}${currentAttacker.suit}.`);
-        
         checkWinCondition(); 
         
-        // *** ИСПРАВЛЕНИЕ: Передаем ход игроку, чтобы нажать БИТО/подкинуть ***
         gameState.attacker = 'player'; 
-        console.log('Ход перешел к игроку для выбора БИТО или ПОДКИДЫВАНИЯ.');
         
     } else {
-        console.log(`❌ Нельзя отбиться: ${cardToDefend.value}${cardToDefend.suit} не бьет ${currentAttacker.value}${currentAttacker.suit}.`);
         tg.HapticFeedback.impactOccurred('error');
         return;
     }
 
     renderPlayerHand(); 
     renderTable(); 
+    updateMoveButtonsVisibility();
 }
 
 function endMove() {
     if (gameState.activeCards.length === 0) {
-        console.log("На столе нет карт, чтобы сказать 'Бито'.");
         return;
     }
     
-    // После "Бито" атакует следующий игрок (сейчас это бот)
     gameState.attacker = 'opponent'; 
 
     drawCards('playerHand');
     drawCards('opponentHand');
     
     gameState.activeCards = []; 
-    console.log("Бито! Стол очищен. Ход переходит к сопернику.");
 
     renderGameStatic();
     renderPlayerHand();
     renderTable();
     
-    botPlay(); // Бот делает ход, как новый атакующий
+    botPlay();
+    updateMoveButtonsVisibility();
 }
 
 function takeCards() {
     if (gameState.activeCards.length === 0) {
-        console.log("На столе нет карт, чтобы забрать.");
         return;
     }
     
@@ -463,9 +456,6 @@ function takeCards() {
         return values.indexOf(a.value) - values.indexOf(b.value);
     });
 
-    console.log(`Игрок взял карты со стола. Теперь в руке: ${gameState.playerHand.length} карт.`);
-
-    // После "Беру" атакует следующий игрок (сейчас это бот)
     gameState.attacker = 'opponent'; 
 
     drawCards('opponentHand');
@@ -475,29 +465,11 @@ function takeCards() {
     renderPlayerHand();
     renderTable();
     
-    botPlay(); // Бот делает ход, как новый атакующий
+    botPlay();
+    updateMoveButtonsVisibility();
 }
 
-function openSkinShop() {
-    let message = '';
-    
-    if (playerProfile.activeSkin === 'default') {
-        playerProfile.activeSkin = 'skin-cyberpunk';
-        message = 'Выбран скин: Киберпанк';
-    } else if (playerProfile.activeSkin === 'skin-cyberpunk') {
-        playerProfile.activeSkin = 'skin-gold';
-        message = 'Выбран скин: Золотой (Легендарка!)';
-    } else {
-        playerProfile.activeSkin = 'default';
-        message = 'Скин сброшен на стандартный.';
-    }
-
-    console.log(`--- Скин изменен: ${message} ---`); 
-    
-    renderPlayerHand();
-    renderGameStatic();
-    renderTable();
-}
+// *** ЛОГИКА СКИНОВ УДАЛЕНА ***
 
 function initGame() {
     let fullDeck = createDeck();
@@ -523,12 +495,11 @@ function initGame() {
         if (a.suit > b.suit) return 1;
         return values.indexOf(a.value) - values.indexOf(b.value);
     });
-
-    console.log(`Козырь: ${gameState.trump.value}${gameState.trump.suit}. В колоде: ${gameState.deck.length} карт.`);
     
     renderGameStatic();
     renderPlayerHand();
     renderTable(); 
+    updateMoveButtonsVisibility(); // Обновление кнопок при запуске
     
     return gameState;
 }
@@ -536,17 +507,15 @@ function initGame() {
 
 // --- ФИНАЛЬНЫЙ ЗАПУСК И ИНИЦИАЛИЗАЦИЯ API ---
 
-// Привязка кнопок
-document.getElementById('skinShopBtn').addEventListener('click', openSkinShop);
+// Привязка кнопок (удалили кнопку скинов)
 document.getElementById('takeBtn').addEventListener('click', takeCards);
 document.getElementById('passBtn').addEventListener('click', endMove);
 
 // Инициализация игры
 initGame();
 
-// Безопасный вызов Telegram API (должен быть тут)
+// Безопасный вызов Telegram API
 tg.ready();
 if (tg.isExpanded === false) {
     tg.expand();
 }
-
