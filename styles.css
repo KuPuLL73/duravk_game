@@ -2,34 +2,34 @@
 body, html {
     margin: 0; padding: 0;
     width: 100%; height: 100%;
-    background-color: #2E7D32; /* Классическое зеленое сукно */
+    background-color: #2E7D32; 
     font-family: Arial, sans-serif;
     overflow: hidden;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
 }
 
-/* Сетка стола 4 игрока */
+/* --- СЕТКА СТОЛА (Упрощенная, стабильная) --- */
 .game-table {
     width: 100%; height: 100%;
     position: relative;
     display: flex;
-    justify-content: center;
-    align-items: center;
+    flex-direction: column;
+    justify-content: space-between;
+    box-sizing: border-box;
+    padding: 10px 0 20px 0;
 }
 
 /* --- ВЕРХНИЙ ИГРОК (Бот) --- */
 .top-player {
-    position: absolute;
-    top: -30px; /* Карты наполовину за краем, как у соперника */
-    width: 300px;
     height: 100px;
+    width: 100%;
     display: flex;
     justify-content: center;
-    /* transform: rotate(180deg);  Если хотим перевернуть карты рубашкой к нам */
+    align-items: flex-end;
 }
 
-/* --- БОКОВЫЕ ИГРОКИ --- */
+/* --- БОКОВЫЕ ИГРОКИ (Критично: сдвинуты margin'ами, а не position: absolute) --- */
 .side-player {
     position: absolute;
     top: 50%;
@@ -37,14 +37,19 @@ body, html {
     display: flex;
     flex-direction: column;
     align-items: center;
-    opacity: 0.6; /* Они пока не активны */
+    opacity: 0.6;
+    z-index: 5;
 }
 
-.side-player.left { left: 10px; }
-.side-player.right { right: 60px; /* Отступ под бусты */ }
+.side-player.left { 
+    left: 10px; 
+}
+.side-player.right { 
+    right: 70px; /* Отступ от края для бустов */
+}
 
 .card-back-side {
-    width: 50px; height: 35px; /* Горизонтальная ориентация */
+    width: 50px; height: 35px;
     background: repeating-linear-gradient(45deg, #b71c1c, #b71c1c 5px, #d32f2f 5px, #d32f2f 10px);
     border: 2px solid white;
     border-radius: 4px;
@@ -53,10 +58,8 @@ body, html {
 
 /* --- НИЖНИЙ ИГРОК (Вы) --- */
 .bottom-player {
-    position: absolute;
-    bottom: 20px;
+    height: 180px;
     width: 100%;
-    height: 180px; /* Высота под веер */
     display: flex;
     justify-content: center;
     align-items: flex-end;
@@ -65,14 +68,16 @@ body, html {
 
 .hand-container {
     position: relative;
-    width: 300px; /* Ширина веера */
+    width: 100%;
+    max-width: 400px; /* Ограничиваем ширину веера */
     height: 100%;
+    display: flex;
+    justify-content: center;
 }
 
 /* --- ЦЕНТР: КОЛОДА И БИТВА --- */
 .center-table {
-    width: 80%;
-    height: 40%;
+    flex-grow: 1; /* Занимает все доступное место */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -83,7 +88,7 @@ body, html {
 /* КОЛОДА */
 .deck-area {
     position: absolute;
-    left: 0;
+    left: 5%; /* Сдвиг от левого края */
     width: 80px; height: 100px;
     display: flex; align-items: center;
 }
@@ -91,69 +96,58 @@ body, html {
 .deck-stack {
     position: absolute;
     left: 15px; top: 10px;
-    z-index: 2; /* Поверх козыря */
+    z-index: 2;
 }
 
-/* КОЗЫРЬ (Исправлено отображение) */
+/* КОЗЫРЬ (Исправлено: увеличен z-index, сдвиг минимальный) */
 .trump-card {
     position: absolute;
     left: 20px; 
     top: 15px;
-    transform: rotate(90deg) translateX(20px); /* Выдвигаем вправо */
-    z-index: 1; /* Под колодой */
+    transform: rotate(90deg) translateX(15px); /* Минимальный сдвиг, чтобы не плыл */
+    z-index: 3; /* Поверх колоды, чтобы было видно! */
 }
 
 /* БИТВА */
 .battle-area {
-    margin-left: 90px; /* Место под колоду */
+    margin-left: 90px; /* Отступ под колоду */
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
     gap: 15px;
+    padding: 0 10px;
+    width: 100%;
 }
 
 .card-pair {
     position: relative;
     width: 70px; height: 100px;
+    margin: 5px;
 }
 
 /* --- ДИЗАЙН КАРТ --- */
 .card {
     width: 90px; height: 130px;
-    background: white;
-    border-radius: 8px;
+    background: white; border-radius: 8px;
     box-shadow: -2px 0 8px rgba(0,0,0,0.3);
     position: absolute;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    font-weight: bold;
-    font-size: 20px;
-    color: black;
-    transition: transform 0.2s, top 0.2s;
+    display: flex; flex-direction: column; justify-content: space-between;
+    font-weight: bold; font-size: 20px; color: black;
 }
 
 .card.red { color: #D32F2F; }
 .card.black { color: #212121; }
 
-.corner {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 4px;
-    line-height: 0.9;
-}
+.corner { padding: 4px; line-height: 0.9; }
 .top-left { align-self: flex-start; }
 .bottom-right { align-self: flex-end; transform: rotate(180deg); }
 
 .main-suit {
-    position: absolute;
-    top: 50%; left: 50%;
+    position: absolute; top: 50%; left: 50%;
     transform: translate(-50%, -50%);
     font-size: 55px;
 }
 
-/* Рубашка (для бота сверху и колоды) */
 .card-back {
     width: 50px; height: 75px;
     background: repeating-linear-gradient(45deg, #b71c1c, #b71c1c 5px, #d32f2f 5px, #d32f2f 10px);
@@ -168,28 +162,22 @@ body, html {
 .hand-card {
     position: absolute;
     bottom: 0;
-    left: 50%; /* Центрируем, чтобы JS расставлял от центра */
-    transform-origin: 50% 150%; /* Точка вращения далеко внизу для ровного веера */
+    left: 50%; 
+    transform-origin: 50% 150%; 
     box-shadow: -1px 0 5px rgba(0,0,0,0.3);
 }
 
 .hand-card:active {
-    bottom: 30px; /* При нажатии всплывает */
+    bottom: 30px; 
 }
 
-/* Карты на столе (меньше размером) */
+/* Карты на столе */
 .battle-area .card, .deck-area .card {
     width: 60px; height: 90px;
     font-size: 16px;
 }
 .battle-area .card .main-suit { font-size: 30px; }
 .deck-area .card .main-suit { font-size: 30px; }
-
-.battle-area .card:nth-child(2) {
-    transform: rotate(15deg) translate(10px, 5px);
-    z-index: 10;
-    box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
-}
 
 
 /* --- UI ЭЛЕМЕНТЫ --- */
@@ -214,7 +202,7 @@ body, html {
 
 .action-buttons {
     position: fixed;
-    bottom: 190px; /* Над рукой игрока */
+    bottom: 190px;
     width: 100%;
     display: flex; justify-content: center;
     gap: 20px;
@@ -234,6 +222,5 @@ body, html {
     display: none;
     text-transform: uppercase;
 }
-
 .take { background: linear-gradient(to right, #ff9800, #f57c00); }
 .pass { background: linear-gradient(to right, #4caf50, #388e3c); }
