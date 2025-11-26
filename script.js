@@ -52,39 +52,32 @@ function updateUI() {
     updateButtons();
 }
 
-// Рендер руки игрока (СТАБИЛЬНЫЙ ВЕЕР)
+// Рендер руки игрока (Веер не изменен)
 function renderPlayerHand() {
     const container = document.getElementById('player-hand');
     container.innerHTML = '';
     
     const cards = gameState.playerHand;
     const total = cards.length;
-    const cardWidth = 90; // Ширина карты (из CSS)
+    const cardWidth = 90; 
     
-    const angleRange = 50; // Угол раскрытия всего веера
+    const angleRange = 50; 
     const angleStep = total > 1 ? angleRange / (total - 1) : 0;
     const startAngle = -angleRange / 2;
 
-    const overlap = 45; // Наложение карт (меньше, чем половина ширины, для видимости)
-    const handWidth = total * overlap + (cardWidth - overlap); // Общая ширина, которую займет веер
+    const overlap = 45; 
+    const handWidth = total * overlap + (cardWidth - overlap);
 
     cards.forEach((card, index) => {
         const el = createCardElement(card);
         el.classList.add('hand-card');
 
-        // Вычисляем угол и смещение
         const rotate = startAngle + (angleStep * index);
-        
-        // Смещение X:
-        // 1. Сдвиг на 50% влево (чтобы центрировать начальную позицию)
-        // 2. Сдвиг на based on index (для веера)
         const xTranslate = (index * overlap) - (handWidth / 2);
         
-        // Арка (сильнее на боковых картах)
         const middleOffset = Math.abs(index - (total - 1) / 2);
         const yTranslate = middleOffset * 10; 
         
-        // Используем left: 50% и transform: translateX для точного центрирования
         el.style.transform = `translateX(${xTranslate}px) translateY(${yTranslate}px) rotate(${rotate}deg)`;
         el.style.zIndex = index; 
 
@@ -93,30 +86,31 @@ function renderPlayerHand() {
     });
 }
 
-// Рендер руки соперника (Веер рубашками)
+// Рендер руки соперника (УПРОЩЕНО: небольшой стек + счетчик)
 function renderOpponent() {
     const container = document.getElementById('opponent-hand');
     container.innerHTML = '';
-    
     const count = gameState.opponentHand.length;
-    const arcAngle = 30; 
-    const startAngle = -arcAngle / 2;
-    const step = count > 1 ? arcAngle / (count - 1) : 0;
-    const cardWidth = 50; // Ширина рубашки
-    const overlap = 20;
 
-    const handWidth = count * overlap + (cardWidth - overlap);
-
-    for(let i=0; i<count; i++) {
-        const back = document.createElement('div');
-        back.className = 'card-back';
+    if (count > 0) {
+        // Визуализация стека (до 3 карт)
+        for(let i=0; i<Math.min(count, 3); i++) {
+            const back = document.createElement('div');
+            back.className = 'card-back';
+            // Позиционируем в центр контейнера и немного смещаем
+            back.style.transform = `translateX(${-50 + i * 5}px) translateY(${i * 5}px)`; 
+            back.style.zIndex = i;
+            container.appendChild(back);
+        }
         
-        const rotate = count > 1 ? startAngle + (step * i) : 0;
-        const xOffset = (i * overlap) - (handWidth / 2); // Центрирование
-
-        back.style.transform = `translateX(${xOffset}px) rotate(${rotate}deg)`;
-        back.style.zIndex = i;
-        container.appendChild(back);
+        // Добавление счетчика рядом со стеком
+        const countEl = document.createElement('div');
+        countEl.textContent = `${count} карт`;
+        countEl.style.color = 'white';
+        countEl.style.marginLeft = '120px'; // Отступ от карт
+        countEl.style.fontSize = '18px';
+        countEl.style.fontWeight = 'bold';
+        container.appendChild(countEl);
     }
 }
 
@@ -138,6 +132,7 @@ function renderTable() {
     });
 }
 
+// Рендер колоды (ДОБАВЛЕН СЧЕТЧИК)
 function renderDeck() {
     const container = document.getElementById('deck-zone');
     container.innerHTML = '';
@@ -153,6 +148,13 @@ function renderDeck() {
     if (gameState.deck.length > 0) {
         const stack = document.createElement('div');
         stack.className = 'card-back deck-stack';
+
+        // ДОБАВЛЯЕМ СЧЕТЧИК
+        const countEl = document.createElement('div');
+        countEl.className = 'deck-count';
+        countEl.textContent = gameState.deck.length;
+        stack.appendChild(countEl);
+        
         container.appendChild(stack);
     }
 }
