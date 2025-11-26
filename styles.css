@@ -9,7 +9,7 @@ body, html {
     -webkit-tap-highlight-color: transparent;
 }
 
-/* --- СЕТКА СТОЛА (Простая) --- */
+/* --- СЕТКА СТОЛА --- */
 .game-table {
     width: 100%; height: 100%;
     position: relative;
@@ -17,7 +17,7 @@ body, html {
     flex-direction: column;
     justify-content: space-between;
     box-sizing: border-box;
-    padding: 10px 0 20px 0; /* Общий отступ */
+    padding: 10px 0 20px 0;
 }
 
 /* --- ВЕРХНИЙ ИГРОК (Упрощен) --- */
@@ -26,9 +26,8 @@ body, html {
     width: 100%;
     display: flex;
     justify-content: center;
-    align-items: center; /* Центрируем карты и счетчик */
+    align-items: center; 
 }
-/* --- УДАЛЕНЫ СТИЛИ side-player и card-back-side --- */
 
 /* --- НИЖНИЙ ИГРОК (Вы) --- */
 .bottom-player {
@@ -54,22 +53,23 @@ body, html {
     flex-grow: 1; 
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start; /* ВЫРАВНИВАНИЕ ВЛЕВО */
     position: relative;
     z-index: 10;
 }
 
-/* КОЛОДА */
+/* КОЛОДА (ПРИБИТА К КРАЮ) */
 .deck-area {
     position: absolute;
-    left: 5%; 
+    left: 0; /* ПРИБИТ КРАЮ */
+    padding-left: 5px; /* Отступ от самого края экрана */
     width: 80px; height: 100px;
     display: flex; align-items: center;
 }
 
 .deck-stack {
-    position: relative; /* Должен быть относительным для счетчика */
-    /* ... остальные стили рубашки ... */
+    position: relative;
+    left: 15px; top: 10px;
     z-index: 2;
 }
 
@@ -82,7 +82,7 @@ body, html {
     z-index: 3; 
 }
 
-/* НОВЫЙ СТИЛЬ: СЧЕТЧИК КАРТ НА КОЛОДЕ */
+/* СЧЕТЧИК КАРТ НА КОЛОДЕ (ГАРАНТИРОВАННО СВЕРХУ) */
 .deck-count {
     position: absolute;
     top: 50%;
@@ -94,12 +94,12 @@ body, html {
     background: rgba(0,0,0,0.6);
     padding: 2px 6px;
     border-radius: 4px;
-    z-index: 5;
+    z-index: 5; /* ВЫСОКИЙ Z-INDEX */
 }
 
-/* БИТВА */
+/* БИТВА (ОТСТУП ОТ КОЛОДЫ) */
 .battle-area {
-    margin-left: 90px; 
+    margin-left: 95px; /* Увеличен, чтобы избежать наложения */
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
@@ -158,17 +158,12 @@ body, html {
 .deck-area .card .main-suit { font-size: 30px; }
 
 
-/* --- UI ЭЛЕМЕНТЫ (Не изменены) --- */
+/* --- UI ЭЛЕМЕНТЫ --- */
 .boosts-panel {
     position: fixed; right: 10px; top: 30%;
     display: flex; flex-direction: column; gap: 15px; z-index: 1000;
 }
-.boost-btn {
-    width: 45px; height: 45px; background: rgba(0,0,0,0.5);
-    border: 2px solid rgba(255,255,255,0.7); border-radius: 50%;
-    display: flex; justify-content: center; align-items: center;
-    color: white; font-size: 22px;
-}
+
 .action-buttons {
     position: fixed; bottom: 190px; width: 100%;
     display: flex; justify-content: center; gap: 20px; z-index: 200;
