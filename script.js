@@ -13,7 +13,7 @@ let gameState = {
     activeCards: [], attacker: 'player' 
 };
 
-// --- Создание HTML карты (Классика с углами) ---
+// --- Создание HTML карты ---
 function createCardElement(card, isBack = false) {
     if (isBack) {
         const el = document.createElement('div');
@@ -52,31 +52,40 @@ function updateUI() {
     updateButtons();
 }
 
-// Рендер руки игрока (КРАСИВЫЙ ВЕЕР)
+// Рендер руки игрока (СТАБИЛЬНЫЙ ВЕЕР)
 function renderPlayerHand() {
     const container = document.getElementById('player-hand');
     container.innerHTML = '';
     
     const cards = gameState.playerHand;
     const total = cards.length;
-    // Угол раскрытия веера (градусы)
-    const arcAngle = 40; 
-    const startAngle = -arcAngle / 2;
-    const step = total > 1 ? arcAngle / (total - 1) : 0;
+    const cardWidth = 90; // Ширина карты (из CSS)
+    
+    const angleRange = 50; // Угол раскрытия всего веера
+    const angleStep = total > 1 ? angleRange / (total - 1) : 0;
+    const startAngle = -angleRange / 2;
+
+    const overlap = 45; // Наложение карт (меньше, чем половина ширины, для видимости)
+    const handWidth = total * overlap + (cardWidth - overlap); // Общая ширина, которую займет веер
 
     cards.forEach((card, index) => {
         const el = createCardElement(card);
         el.classList.add('hand-card');
 
-        // Вычисляем угол для каждой карты
-        const rotate = total > 1 ? startAngle + (step * index) : 0;
+        // Вычисляем угол и смещение
+        const rotate = startAngle + (angleStep * index);
         
-        // Смещение по X (чтобы карты расходились)
-        // Для 10 карт нужно меньше места между ними, чем для 2
-        const xOffset = (index - (total - 1) / 2) * 35; // 35px расстояние
-        const yOffset = Math.abs(index - (total - 1) / 2) * 5; // Небольшая арка
-
-        el.style.transform = `translateX(-50%) translateX(${xOffset}px) translateY(${yOffset}px) rotate(${rotate}deg)`;
+        // Смещение X:
+        // 1. Сдвиг на 50% влево (чтобы центрировать начальную позицию)
+        // 2. Сдвиг на based on index (для веера)
+        const xTranslate = (index * overlap) - (handWidth / 2);
+        
+        // Арка (сильнее на боковых картах)
+        const middleOffset = Math.abs(index - (total - 1) / 2);
+        const yTranslate = middleOffset * 10; 
+        
+        // Используем left: 50% и transform: translateX для точного центрирования
+        el.style.transform = `translateX(${xTranslate}px) translateY(${yTranslate}px) rotate(${rotate}deg)`;
         el.style.zIndex = index; 
 
         el.onclick = () => onCardClick(card.id);
@@ -84,25 +93,29 @@ function renderPlayerHand() {
     });
 }
 
-// Рендер руки соперника (ТОЖЕ ВЕЕР, но рубашками)
+// Рендер руки соперника (Веер рубашками)
 function renderOpponent() {
     const container = document.getElementById('opponent-hand');
     container.innerHTML = '';
     
     const count = gameState.opponentHand.length;
-    // Меньший угол для соперника
     const arcAngle = 30; 
     const startAngle = -arcAngle / 2;
     const step = count > 1 ? arcAngle / (count - 1) : 0;
+    const cardWidth = 50; // Ширина рубашки
+    const overlap = 20;
+
+    const handWidth = count * overlap + (cardWidth - overlap);
 
     for(let i=0; i<count; i++) {
         const back = document.createElement('div');
         back.className = 'card-back';
         
         const rotate = count > 1 ? startAngle + (step * i) : 0;
-        const xOffset = (i - (count - 1) / 2) * 15; // Карты бота плотнее
+        const xOffset = (i * overlap) - (handWidth / 2); // Центрирование
 
         back.style.transform = `translateX(${xOffset}px) rotate(${rotate}deg)`;
+        back.style.zIndex = i;
         container.appendChild(back);
     }
 }
@@ -164,7 +177,7 @@ function updateButtons() {
     }
 }
 
-// --- ИГРОВАЯ ЛОГИКА ---
+// --- ИГРОВАЯ ЛОГИКА (Не изменена) ---
 
 function onCardClick(id) {
     tg.HapticFeedback.impactOccurred('light');
@@ -227,7 +240,6 @@ function createDeckStruct() {
 }
 
 // --- БОТ ---
-
 function botPlay() {
     if (gameState.attacker !== 'opponent') return;
 
