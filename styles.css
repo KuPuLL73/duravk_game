@@ -20,13 +20,19 @@ body, html {
     padding: 10px 0 20px 0; 
 }
 
-/* --- ВЕРХНИЙ ИГРОК (Упрощен) --- */
+/* --- ВЕРХНИЙ ИГРОК --- */
 .top-player {
     height: 100px;
     width: 100%;
     display: flex;
     justify-content: center;
     align-items: center; 
+}
+
+/* УМЕНЬШЕННЫЙ РАЗМЕР РУБАШКИ ДЛЯ ПРОТИВНИКА */
+.top-player .card-back {
+    width: 45px; 
+    height: 65px;
 }
 
 /* --- НИЖНИЙ ИГРОК (Вы) --- */
@@ -70,16 +76,16 @@ body, html {
 .deck-stack {
     position: relative;
     left: 15px; top: 10px;
-    z-index: 2; /* Над козырем */
+    z-index: 2;
 }
 
-/* КОЗЫРЬ (Z-INDEX ИСПРАВЛЕН) */
+/* КОЗЫРЬ */
 .trump-card {
     position: absolute;
     left: 20px; 
     top: 15px;
     transform: rotate(90deg) translateX(15px);
-    z-index: 1; /* ПОД КОЛОДОЙ */
+    z-index: 1; 
 }
 
 /* СЧЕТЧИК КАРТ НА КОЛОДЕ */
@@ -114,7 +120,17 @@ body, html {
     margin: 5px;
 }
 
-/* --- ДИЗАЙН КАРТ (Не изменен) --- */
+/* ОФСЕТ ДЛЯ ПОКРЫТЫХ КАРТ */
+.card-pair .card:nth-child(1) { /* Атакующая карта */
+    z-index: 1;
+}
+.card-pair .card:nth-child(2) { /* Защищающая карта */
+    transform: translateY(-8px) rotate(5deg); 
+    box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+    z-index: 2;
+}
+
+/* --- ДИЗАЙН КАРТ --- */
 .card {
     width: 90px; height: 130px;
     background: white; border-radius: 8px;
@@ -157,13 +173,11 @@ body, html {
 .battle-area .card .main-suit { font-size: 30px; }
 .deck-area .card .main-suit { font-size: 30px; }
 
-
-/* --- UI ЭЛЕМЕНТЫ --- */
+/* --- UI ЭЛЕМЕНТЫ (Без изменений) --- */
 .boosts-panel {
     position: fixed; right: 10px; top: 30%;
     display: flex; flex-direction: column; gap: 15px; z-index: 1000;
 }
-
 .action-buttons {
     position: fixed; bottom: 190px; width: 100%;
     display: flex; justify-content: center; gap: 20px; z-index: 200;
