@@ -17,7 +17,7 @@ body, html {
     flex-direction: column;
     justify-content: space-between;
     box-sizing: border-box;
-    padding: 10px 0 20px 0;
+    padding: 10px 0 20px 0; 
 }
 
 /* --- ВЕРХНИЙ ИГРОК (Упрощен) --- */
@@ -53,16 +53,16 @@ body, html {
     flex-grow: 1; 
     display: flex;
     align-items: center;
-    justify-content: flex-start; /* ВЫРАВНИВАНИЕ ВЛЕВО */
+    justify-content: flex-start; 
     position: relative;
     z-index: 10;
 }
 
-/* КОЛОДА (ПРИБИТА К КРАЮ) */
+/* КОЛОДА */
 .deck-area {
     position: absolute;
-    left: 0; /* ПРИБИТ КРАЮ */
-    padding-left: 5px; /* Отступ от самого края экрана */
+    left: 0; 
+    padding-left: 5px; 
     width: 80px; height: 100px;
     display: flex; align-items: center;
 }
@@ -70,19 +70,19 @@ body, html {
 .deck-stack {
     position: relative;
     left: 15px; top: 10px;
-    z-index: 2;
+    z-index: 2; /* Над козырем */
 }
 
-/* КОЗЫРЬ */
+/* КОЗЫРЬ (Z-INDEX ИСПРАВЛЕН) */
 .trump-card {
     position: absolute;
     left: 20px; 
     top: 15px;
     transform: rotate(90deg) translateX(15px);
-    z-index: 3; 
+    z-index: 1; /* ПОД КОЛОДОЙ */
 }
 
-/* СЧЕТЧИК КАРТ НА КОЛОДЕ (ГАРАНТИРОВАННО СВЕРХУ) */
+/* СЧЕТЧИК КАРТ НА КОЛОДЕ */
 .deck-count {
     position: absolute;
     top: 50%;
@@ -94,12 +94,12 @@ body, html {
     background: rgba(0,0,0,0.6);
     padding: 2px 6px;
     border-radius: 4px;
-    z-index: 5; /* ВЫСОКИЙ Z-INDEX */
+    z-index: 5; 
 }
 
-/* БИТВА (ОТСТУП ОТ КОЛОДЫ) */
+/* БИТВА */
 .battle-area {
-    margin-left: 95px; /* Увеличен, чтобы избежать наложения */
+    margin-left: 95px; 
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
