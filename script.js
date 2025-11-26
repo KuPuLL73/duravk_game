@@ -511,3 +511,22 @@ document.getElementById('passBtn').addEventListener('click', endMove);
 
 
 initGame();
+// *** ИНИЦИАЛИЗАЦИЯ И ФИНАЛЬНЫЙ ЗАПУСК ***
+const tg = window.Telegram.WebApp; 
+
+tg.ready(); // Убеждаемся, что API готов
+
+// Разворачиваем приложение на весь экран
+if (tg.isExpanded === false) {
+    tg.expand();
+}
+
+// ... Ваш initGame() должен вызываться тут, если он не вызывается сам:
+// initGame(); 
+
+// --- ПРИВЯЗКА КНОПОК ИЗ HTML ---
+document.getElementById('skinShopBtn').addEventListener('click', openSkinShop);
+document.getElementById('takeBtn').addEventListener('click', takeCards);
+document.getElementById('passBtn').addEventListener('click', endMove);
+
+initGame();
