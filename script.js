@@ -1,97 +1,58 @@
-const tg = window.Telegram.WebApp; 
+const tg = window.Telegram.WebApp;
 tg.ready();
 if (!tg.isExpanded) tg.expand();
 
-// --- ДАННЫЕ ---
+// Данные
 const suits = ['♠', '♥', '♦', '♣'];
 const values = ['6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
 
+// Состояние
 let gameState = {
-    deck: [], trump: null, trumpSuit: null, playerHand: [], opponentHand: [], 
+    deck: [], trump: null, trumpSuit: null, 
+    playerHand: [], opponentHand: [], 
     activeCards: [], attacker: 'player' 
 };
 
-// --- СОЗДАНИЕ КАРТ ---
-function createDeck() {
-    const deck = [];
-    let idCounter = 1;
-    for (const suit of suits) {
-        for (const value of values) {
-            deck.push({ id: idCounter++, suit, value });
-        }
-    }
-    return deck;
-}
-
-function shuffle(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
-}
-
-// Новая верстка карты (Большая)
+// --- Создание HTML карты (КЛАССИЧЕСКИЙ ДИЗАЙН) ---
 function createCardElement(card) {
-    const cardDiv = document.createElement('div');
-    cardDiv.classList.add('card');
-    cardDiv.dataset.cardId = card.id;
-    
-    const isRed = (card.suit === '♥' || card.suit === '♦');
-    cardDiv.classList.add(isRed ? 'red' : 'black');
+    const el = document.createElement('div');
+    el.className = 'card';
+    el.dataset.id = card.id;
 
-    cardDiv.innerHTML = `
-        <div class="card-top">
-            <span>${card.value}</span> <span>${card.suit}</span>
+    // Цвет
+    if (card.suit === '♥' || card.suit === '♦') el.classList.add('red');
+    else el.classList.add('black');
+
+    // HTML структура: Угол левый, Центр, Угол правый
+    el.innerHTML = `
+        <div class="corner top-left">
+            <span>${card.value}</span>
+            <span>${card.suit}</span>
         </div>
-        <div class="card-center">${card.suit}</div>
-        <div class="card-bottom">
-            <span>${card.value}</span> <span>${card.suit}</span>
+        <div class="main-suit">${card.suit}</div>
+        <div class="corner bottom-right">
+            <span>${card.value}</span>
+            <span>${card.suit}</span>
         </div>
     `;
-    return cardDiv;
+    return el;
 }
 
-// --- ЛОГИКА ОТОБРАЖЕНИЯ UI ---
+// --- UI Логика ---
 
 function updateUI() {
     renderPlayerHand();
     renderTable();
-    renderStatic();
+    renderOpponent();
+    renderDeck();
     updateButtons();
 }
 
-function updateButtons() {
-    const actionBar = document.getElementById('action-bar');
-    const takeBtn = document.getElementById('takeBtn');
-    const passBtn = document.getElementById('passBtn');
-
-    takeBtn.style.display = 'none';
-    passBtn.style.display = 'none';
-    actionBar.classList.remove('visible');
-
-    // Логика кнопок
-    if (gameState.activeCards.length > 0) {
-        if (gameState.attacker === 'opponent') {
-            // Бот атакует -> Мы можем взять
-            takeBtn.style.display = 'block';
-            actionBar.classList.add('visible');
-        } else if (gameState.attacker === 'player') {
-            // Мы атакуем. Если есть отбитая карта -> Можно нажать Бито
-            const lastMove = gameState.activeCards[gameState.activeCards.length - 1];
-            if (lastMove && lastMove.defender) {
-                passBtn.style.display = 'block';
-                actionBar.classList.add('visible');
-            }
-        }
-    }
-}
-
-// --- РЕНДЕРИНГ ---
-
+// Рендер руки игрока (ВЕЕР)
 function renderPlayerHand() {
     const container = document.getElementById('player-hand');
-    container.innerHTML = ''; 
+    container.innerHTML = '';
+    
     const cards = gameState.playerHand;
     const total = cards.length;
     const middle = (total - 1) / 2;
@@ -99,17 +60,21 @@ function renderPlayerHand() {
     cards.forEach((card, index) => {
         const el = createCardElement(card);
         el.classList.add('hand-card');
-        
-        // Настройка веера для БОЛЬШИХ карт
-        const offset = index - middle;
-        const rotate = offset * 5;     // Угол поворота
-        const x = offset * 35;         // Смещение по горизонтали (чтобы видеть карты)
-        const y = Math.abs(offset) * 10; // Смещение аркой вниз
-        
-        el.style.transform = `translateX(${x}px) translateY(${y}px) rotate(${rotate}deg)`;
-        el.style.zIndex = index;
 
-        el.addEventListener('click', () => onCardClick(card.id));
+        // Логика веера:
+        // Смещаем карты вправо (translateX), чтобы видеть левый угол
+        // Поворачиваем (rotate)
+        // Опускаем боковые карты (translateY)
+        
+        const offset = index - middle;
+        const rotate = offset * 5;  // Поворот 5 градусов
+        const x = offset * 40;      // Отступ 40px (достаточно чтобы видеть цифру)
+        const y = Math.abs(offset) * 15; // Арка
+
+        el.style.transform = `translateX(${x}px) translateY(${y}px) rotate(${rotate}deg)`;
+        el.style.zIndex = index; // Каждая следующая карта поверх предыдущей
+
+        el.onclick = () => onCardClick(card.id);
         container.appendChild(el);
     });
 }
@@ -117,50 +82,72 @@ function renderPlayerHand() {
 function renderTable() {
     const container = document.getElementById('table-zone');
     container.innerHTML = '';
-    
     gameState.activeCards.forEach(move => {
-        const stack = document.createElement('div');
-        stack.className = 'card-stack';
+        const pair = document.createElement('div');
+        pair.className = 'card-pair';
         
-        const card1 = createCardElement(move.attacker);
-        stack.appendChild(card1);
+        // Атака
+        const c1 = createCardElement(move.attacker);
+        pair.appendChild(c1);
 
+        // Защита
         if (move.defender) {
-            const card2 = createCardElement(move.defender);
-            stack.appendChild(card2);
+            const c2 = createCardElement(move.defender);
+            pair.appendChild(c2);
         }
-        container.appendChild(stack);
+        container.appendChild(pair);
     });
 }
 
-function renderStatic() {
-    // Соперник
-    const oppContainer = document.getElementById('opponent-hand');
-    oppContainer.innerHTML = '';
+function renderOpponent() {
+    const container = document.getElementById('opponent-hand');
+    container.innerHTML = '';
     for(let i=0; i<gameState.opponentHand.length; i++) {
         const back = document.createElement('div');
         back.className = 'card-back';
-        oppContainer.appendChild(back);
-    }
-
-    // Колода
-    const deckContainer = document.getElementById('deck-zone');
-    deckContainer.innerHTML = '';
-    if(gameState.trump) {
-        // Козырь
-        const trump = createCardElement(gameState.trump);
-        trump.classList.add('trump-card');
-        // Делаем козырь визуально меньше или таким же, как в руке
-        trump.style.transform = "scale(0.8) rotate(90deg) translateX(20px)";
-        deckContainer.appendChild(trump);
-    }
-    if(gameState.deck.length > 0) {
-        const stack = document.createElement('div');
-        stack.className = 'card-back deck-stack';
-        deckContainer.appendChild(stack);
+        container.appendChild(back);
     }
 }
 
+function renderDeck() {
+    const container = document.getElementById('deck-zone');
+    container.innerHTML = '';
+    
+    if (gameState.trump) {
+        const trump = createCardElement(gameState.trump);
+        trump.classList.add('trump-card');
+        container.appendChild(trump);
+    }
+    
+    if (gameState.deck.length > 0) {
+        const stack = document.createElement('div');
+        stack.className = 'card-back deck-stack';
+        container.appendChild(stack);
+    }
+}
+
+function updateButtons() {
+    const takeBtn = document.getElementById('takeBtn');
+    const passBtn = document.getElementById('passBtn');
+    
+    takeBtn.style.display = 'none';
+    passBtn.style.display = 'none';
+
+    if (gameState.activeCards.length > 0) {
+        // Если атакует бот -> Мы берем
+        if (gameState.attacker === 'opponent') {
+            takeBtn.style.display = 'block';
+        } 
+        // Если атакуем мы
+        else if (gameState.attacker === 'player') {
+            // Если последняя карта отбита -> Можно Бито
+            const last = gameState.activeCards[gameState.activeCards.length - 1];
+            if (last && last.defender) {
+                passBtn.style.display = 'block';
+            }
+        }
+    }
+}
 
 // --- ИГРОВАЯ ЛОГИКА ---
 
@@ -171,12 +158,9 @@ function onCardClick(id) {
         // Первый ход
         if (gameState.attacker === 'player') makeMove(id);
     } else {
-        // Бой идет
-        if (gameState.attacker === 'player') {
-             makeMove(id); // Подкидывание
-        } else {
-             playerDefend(id); // Защита
-        }
+        // Бой
+        if (gameState.attacker === 'player') makeMove(id); // Подкинуть
+        else playerDefend(id); // Отбиться
     }
 }
 
@@ -197,30 +181,29 @@ function makeMove(id) {
     gameState.playerHand.splice(idx, 1);
     gameState.activeCards.push({ attacker: card, defender: null });
     
-    gameState.attacker = 'opponent'; // Передаем ход боту
+    gameState.attacker = 'opponent'; 
     updateUI();
     
-    // Бот отвечает
-    if (gameState.activeCards.length === 1 || !gameState.activeCards[gameState.activeCards.length-1].defender) {
-        setTimeout(botPlay, 1000);
-    }
+    // Бот думает
+    setTimeout(botPlay, 1000);
 }
 
 function playerDefend(id) {
     const idx = gameState.playerHand.findIndex(c => c.id == id);
     const card = gameState.playerHand[idx];
-    
     const lastMove = gameState.activeCards[gameState.activeCards.length - 1];
-    
+
     if (canBeat(lastMove.attacker, card)) {
         gameState.playerHand.splice(idx, 1);
         lastMove.defender = card;
-        gameState.attacker = 'player'; // Ход игрока (нажать Бито)
+        gameState.attacker = 'player'; // Ждем БИТО
         updateUI();
     } else {
         tg.HapticFeedback.impactOccurred('error');
     }
 }
+
+// --- ВСПОМОГАТЕЛЬНЫЕ ---
 
 function canBeat(atk, def) {
     if (atk.suit === def.suit) return values.indexOf(def.value) > values.indexOf(atk.value);
@@ -228,105 +211,97 @@ function canBeat(atk, def) {
     return false;
 }
 
+function createDeckStruct() {
+    const d = []; let id=1;
+    suits.forEach(s => values.forEach(v => d.push({id: id++, suit: s, value: v})));
+    return d;
+}
+
 // --- БОТ ---
+
 function botPlay() {
     if (gameState.attacker !== 'opponent') return;
 
-    // 1. Бот Атакует (если стол пуст)
+    // 1. Атака (стол пуст)
     if (gameState.activeCards.length === 0) {
         if (gameState.opponentHand.length === 0) return;
-        const card = gameState.opponentHand.shift();
+        const card = gameState.opponentHand.shift(); // Берем первую
         gameState.activeCards.push({ attacker: card, defender: null });
         gameState.attacker = 'player';
         updateUI();
         return;
     }
 
-    // 2. Бот Защищается
-    const lastMove = gameState.activeCards[gameState.activeCards.length - 1];
-    if (!lastMove.defender) {
-        // Ищем карту
-        let defIdx = -1;
-        // Простая логика: ищем первую подходящую
-        for(let i=0; i<gameState.opponentHand.length; i++) {
-            if (canBeat(lastMove.attacker, gameState.opponentHand[i])) {
-                defIdx = i; break;
-            }
-        }
-
+    // 2. Защита
+    const last = gameState.activeCards[gameState.activeCards.length - 1];
+    if (!last.defender) {
+        let defIdx = gameState.opponentHand.findIndex(c => canBeat(last.attacker, c));
         if (defIdx !== -1) {
-            // Отбился
             const card = gameState.opponentHand.splice(defIdx, 1)[0];
-            lastMove.defender = card;
-            gameState.attacker = 'opponent'; // Бот может подкинуть? Нет, пока передаем ход игроку "Бито"
-            // В упрощенной версии сразу даем игроку Бито
-            gameState.attacker = 'player';
+            last.defender = card;
+            gameState.attacker = 'player'; // Отбился
             updateUI();
         } else {
-            // Бот берет
             botTake();
         }
     }
 }
 
 function botTake() {
-    // Бот забирает все карты
     gameState.activeCards.forEach(m => {
         gameState.opponentHand.push(m.attacker);
         if(m.defender) gameState.opponentHand.push(m.defender);
     });
     gameState.activeCards = [];
     drawCards();
-    gameState.attacker = 'player'; // Игрок ходит
+    gameState.attacker = 'player';
     updateUI();
 }
 
-// --- ДЕЙСТВИЯ ---
+// --- КНОПКИ ---
 
-function playerPass() { // БИТО
-    gameState.activeCards = [];
-    drawCards();
-    gameState.attacker = 'opponent'; // Ход бота
-    updateUI();
-    setTimeout(botPlay, 1000);
-}
-
-function playerTake() { // БЕРУ
+document.getElementById('takeBtn').onclick = () => {
     gameState.activeCards.forEach(m => {
         gameState.playerHand.push(m.attacker);
         if(m.defender) gameState.playerHand.push(m.defender);
     });
     gameState.activeCards = [];
     drawCards();
-    gameState.attacker = 'opponent'; // Ходит бот (т.к. мы взяли)
+    gameState.attacker = 'opponent';
     updateUI();
     setTimeout(botPlay, 1000);
-}
+};
+
+document.getElementById('passBtn').onclick = () => {
+    gameState.activeCards = [];
+    drawCards();
+    gameState.attacker = 'opponent';
+    updateUI();
+    setTimeout(botPlay, 1000);
+};
 
 function drawCards() {
-    while(gameState.playerHand.length < 6 && gameState.deck.length > 0) 
-        gameState.playerHand.push(gameState.deck.pop());
-    while(gameState.opponentHand.length < 6 && gameState.deck.length > 0) 
-        gameState.opponentHand.push(gameState.deck.pop());
-    
-    // Сортировка
+    while(gameState.playerHand.length < 6 && gameState.deck.length > 0) gameState.playerHand.push(gameState.deck.pop());
+    while(gameState.opponentHand.length < 6 && gameState.deck.length > 0) gameState.opponentHand.push(gameState.deck.pop());
     gameState.playerHand.sort((a,b) => values.indexOf(a.value) - values.indexOf(b.value));
 }
 
 // --- START ---
-document.getElementById('takeBtn').addEventListener('click', playerTake);
-document.getElementById('passBtn').addEventListener('click', playerPass);
+let deck = createDeckStruct();
+// Перемешка
+for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+}
 
-let deck = shuffle(createDeck());
+gameState.deck = deck;
 // Раздача
 for(let i=0; i<6; i++) {
-    gameState.playerHand.push(deck.pop());
-    gameState.opponentHand.push(deck.pop());
+    gameState.playerHand.push(gameState.deck.pop());
+    gameState.opponentHand.push(gameState.deck.pop());
 }
-gameState.trump = deck.pop();
+gameState.trump = gameState.deck.pop();
 gameState.trumpSuit = gameState.trump.suit;
-gameState.deck = deck;
-// Козырь в начало колоды (низ стопки)
 gameState.deck.unshift(gameState.trump);
 
 updateUI();
