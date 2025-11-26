@@ -52,7 +52,7 @@ function updateUI() {
     updateButtons();
 }
 
-// Рендер руки игрока (ДИНАМИЧЕСКАЯ ПЛОТНОСТЬ)
+// Рендер руки игрока (ПЛОТНЫЙ ВЕЕР)
 function renderPlayerHand() {
     const container = document.getElementById('player-hand');
     container.innerHTML = '';
@@ -61,18 +61,18 @@ function renderPlayerHand() {
     const total = cards.length;
     const cardWidth = 90; 
     
-    // Динамическая настройка веера в зависимости от количества карт
+    // Динамическая настройка веера (УВЕЛИЧЕНА ПЛОТНОСТЬ)
     let angleRange, overlap;
 
     if (total <= 6) {
-        angleRange = 40; 
-        overlap = 50; 
+        angleRange = 30; // Меньше угол
+        overlap = 65; // Больше перекрытие (плотнее)
     } else if (total <= 10) {
-        angleRange = 60; 
-        overlap = 40; 
+        angleRange = 50; 
+        overlap = 50; 
     } else { 
         angleRange = 70; 
-        overlap = 30; 
+        overlap = 40; 
     }
     
     const angleStep = total > 1 ? angleRange / (total - 1) : 0;
@@ -228,7 +228,7 @@ function makeMove(id) {
 
     updateUI();
     
-    // Если карты не покрыты, бот должен защищаться немедленно
+    // Если карты не покрыты, бот должен защищаться немедленно (если он защитник)
     if (gameState.attacker === 'opponent') {
         setTimeout(botPlay, 1000);
     }
@@ -236,9 +236,8 @@ function makeMove(id) {
 
 // ФИКС ОШИБКИ: Игрок остается защитником
 function playerDefend(id) {
-    // Проверка, что игрок действительно защищается (есть непокрытая карта)
     const lastUncovered = gameState.activeCards.find(m => !m.defender);
-    if (!lastUncovered) return; // Все покрыто, это ошибка клика
+    if (!lastUncovered) return; 
 
     const idx = gameState.playerHand.findIndex(c => c.id == id);
     const card = gameState.playerHand[idx];
@@ -247,7 +246,7 @@ function playerDefend(id) {
         gameState.playerHand.splice(idx, 1);
         lastUncovered.defender = card;
         
-        // !!! КЛЮЧЕВОЙ ФИКС: НЕ МЕНЯЕМ gameState.attacker. Игрок все еще защитник.
+        // Игрок остается защитником (attacker = 'opponent')
         
         updateUI();
 
@@ -283,9 +282,8 @@ function botThrowInNextCard() {
     // 2. Ищем карту, которую бот может подкинуть
     let throwInCardIdx = gameState.opponentHand.findIndex(card => tableValues.includes(card.value));
     
-    // 3. Проверка лимитов защиты
-    const totalCardsOnTable = gameState.activeCards.length * 2; // Максимум, сколько уже лежит
-    const maxAttackLimit = Math.min(6, gameState.playerHand.length); // Максимальное число карт для подбрасывания
+    // 3. Проверка лимитов защиты (мин. 6 карт или кол-во карт у защитника)
+    const maxAttackLimit = Math.min(6, gameState.playerHand.length); 
 
     if (throwInCardIdx !== -1 && gameState.activeCards.length < maxAttackLimit) {
         const card = gameState.opponentHand.splice(throwInCardIdx, 1)[0];
@@ -303,59 +301,54 @@ function botThrowInNextCard() {
 
 // Бот защищается (когда игрок атаковал) или атакует с нуля (когда игрок забрал)
 function botPlay() {
-    if (gameState.attacker !== 'opponent') {
-        // Если бот должен атаковать с нуля (после того как игрок забрал)
-        if (gameState.activeCards.length === 0) {
-            if (gameState.opponentHand.length === 0) return;
-            const card = gameState.opponentHand.shift(); 
-            gameState.activeCards.push({ attacker: card, defender: null });
-            gameState.attacker = 'player'; // Игрок должен защищаться
-            updateUI();
-        }
-        return;
-    }
-
-    // Если бот должен защищаться (когда игрок атакует)
-    const last = gameState.activeCards[gameState.activeCards.length - 1];
-    if (last && !last.defender) {
-        let defIdx = gameState.opponentHand.findIndex(c => canBeat(last.attacker, c));
+    // 1. Бот атакует с нуля (после того как игрок забрал или сделал "БИТО")
+    if (gameState.activeCards.length === 0) {
+        if (gameState.opponentHand.length === 0) return;
         
-        if (defIdx !== -1) {
-            // Успешная защита
-            const card = gameState.opponentHand.splice(defIdx, 1)[0];
-            last.defender = card;
-            
-            gameState.attacker = 'player'; // После успешной защиты бот может подкинуть (игрок будет в makeMove)
-            updateUI();
-            
-            // Бот может подкинуть больше карт.
-            setTimeout(botThrowInNextCardForDefense, 500); 
-
+        // Находим наименьший козырь для первого хода, если есть
+        let cardToAttack;
+        const trumpIdx = gameState.opponentHand.findIndex(c => c.suit === gameState.trumpSuit);
+        if(trumpIdx !== -1) {
+            // Если есть козырь, берем самый маленький козырь
+            const trumps = gameState.opponentHand.filter(c => c.suit === gameState.trumpSuit).sort((a,b) => values.indexOf(a.value) - values.indexOf(b.value));
+            cardToAttack = gameState.opponentHand.splice(gameState.opponentHand.findIndex(c => c.id === trumps[0].id), 1)[0];
         } else {
-            // Бот не может защититься -> Бот берет.
-            botTake();
+            // Иначе, берем самый маленький не козырь
+            const smallestNonTrumpIdx = gameState.opponentHand.findIndex(c => c.suit !== gameState.trumpSuit);
+            if (smallestNonTrumpIdx !== -1) {
+                cardToAttack = gameState.opponentHand.splice(smallestNonTrumpIdx, 1)[0];
+            } else {
+                // Если остались только козыри, берем самый маленький из них (уже отсортирован выше, но для надежности)
+                cardToAttack = gameState.opponentHand.splice(0, 1)[0];
+            }
+        }
+        
+        gameState.activeCards.push({ attacker: cardToAttack, defender: null });
+        gameState.attacker = 'player'; // Игрок должен защищаться
+        updateUI();
+        return;
+    }
+
+    // 2. Бот защищается (когда игрок атакует)
+    if (gameState.attacker === 'opponent') {
+        const last = gameState.activeCards[gameState.activeCards.length - 1];
+        if (last && !last.defender) {
+            let defIdx = gameState.opponentHand.findIndex(c => canBeat(last.attacker, c));
+            
+            if (defIdx !== -1) {
+                // Успешная защита
+                const card = gameState.opponentHand.splice(defIdx, 1)[0];
+                last.defender = card;
+                
+                gameState.attacker = 'player'; // Игрок может подкинуть или нажать "БИТО"
+                updateUI();
+            } else {
+                // Бот не может защититься -> Бот берет.
+                botTake();
+            }
         }
     }
 }
-
-// Добавим отдельную функцию для подбрасывания ботом, когда он защищается
-function botThrowInNextCardForDefense() {
-    if (gameState.attacker !== 'player') return; // Только если игрок атакует
-
-    const tableValues = gameState.activeCards.flatMap(m => [m.attacker.value, m.defender?.value]).filter(v => v);
-    
-    let throwInCardIdx = gameState.playerHand.findIndex(card => tableValues.includes(card.value));
-    
-    if (throwInCardIdx !== -1) {
-        // Если игрок может подкинуть, он ждет клика. 
-        // Если нет, бот (защитник) ничего не делает, ждет клика "БИТО" от игрока.
-        // Здесь мы просто выходим, полагаясь на клик игрока (makeMove).
-        return;
-    } else {
-        // Игрок не может больше подкидывать. Бот (защитник) ждет клика "БИТО"
-    }
-}
-
 
 function botTake() {
     gameState.activeCards.forEach(m => {
@@ -385,12 +378,14 @@ document.getElementById('takeBtn').onclick = () => {
 document.getElementById('passBtn').onclick = () => {
     gameState.activeCards = [];
     drawCards();
-    // Если игрок был атакующим, он пропускает ход. Начинает бот.
+    
+    // Если игрок только что был атакующим (и все покрыто)
     if (gameState.attacker === 'player') { 
-        gameState.attacker = 'opponent'; 
+        gameState.attacker = 'opponent'; // Начинает бот.
         setTimeout(botPlay, 1000);
     } 
-    // Если игрок был защитником (после того как бот остановился), он пропускает ход. Начинает игрок.
+    // Этот случай по новой логике не должен случаться, но для надежности:
+    // Если игрок был защитником (после того как бот остановился)
     else if (gameState.attacker === 'opponent') {
         gameState.attacker = 'player';
     }
