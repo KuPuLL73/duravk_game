@@ -1,205 +1,217 @@
-/* --- Сброс и База --- */
+/* --- ОСНОВА --- */
 body, html {
     margin: 0; padding: 0;
     width: 100%; height: 100%;
+    background-color: #2E7D32; /* Классическое сукно */
+    font-family: Arial, sans-serif;
     overflow: hidden;
-    background: #388E3C; /* Темно-зеленый */
-    font-family: 'Roboto', sans-serif;
     user-select: none;
-    -webkit-tap-highlight-color: transparent; /* Убирает подсветку при клике на мобилках */
+    -webkit-tap-highlight-color: transparent;
 }
 
-/* --- Сетка Игры --- */
-.game-board {
-    display: grid;
+.game-container {
     width: 100%; height: 100%;
-    grid-template-rows: 80px 1fr 180px; /* Верх (Соперник), Стол (Гибкий), Низ (Игрок) */
-    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding-bottom: 20px; /* Место под карты */
+    box-sizing: border-box;
 }
 
-/* --- 1. Зона Соперника (Маленькие карты) --- */
-.opponent-area {
+/* --- 1. СОПЕРНИК --- */
+.opponent-zone {
+    height: 15%;
     display: flex;
     justify-content: center;
-    align-items: flex-start;
+    align-items: center;
     padding-top: 10px;
 }
 
-/* Рубашка карт (для соперника и колоды) - МАЛЕНЬКАЯ */
+/* Рубашка карты (маленькая для соперника) */
 .card-back {
-    width: 45px;
-    height: 70px;
-    background: linear-gradient(45deg, #b71c1c, #d32f2f);
-    border: 1px solid #fff;
+    width: 40px; height: 60px;
+    background: repeating-linear-gradient(45deg, #b71c1c, #b71c1c 5px, #d32f2f 5px, #d32f2f 10px);
+    border: 2px solid white;
     border-radius: 4px;
-    margin-left: -25px; /* Сильное наложение */
-    box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+    margin-left: -20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
-.card-back:first-child { margin-left: 0; }
 
-
-/* --- 2. Стол и Битва --- */
-.table-area {
+/* --- 2. СТОЛ --- */
+.table-zone {
+    flex-grow: 1;
     display: flex;
-    justify-content: space-between; /* Колода слева, бой по центру */
     align-items: center;
     padding: 0 10px;
     position: relative;
 }
 
-.deck-zone {
+.deck-area {
     width: 60px; height: 100%;
     position: relative;
-    display: flex;
-    align-items: center;
+    display: flex; align-items: center;
 }
-
-.deck-stack { position: absolute; left: 10px; }
+.deck-stack { position: absolute; left: 5px; }
 .trump-card {
-    position: absolute; left: 20px;
-    transform: rotate(90deg) translateX(15px);
+    position: absolute; left: 15px;
+    transform: rotate(90deg) translateX(10px);
     z-index: -1;
 }
 
-.battle-zone {
+.battle-area {
     flex-grow: 1;
     height: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
     flex-wrap: wrap;
-    gap: 15px;
 }
 
-/* Стек карт на столе (Атака + Защита) */
-.card-stack {
+.card-pair {
     position: relative;
-    width: 80px; height: 120px; /* Размер места под пару карт */
+    width: 80px; height: 120px;
+    margin: 5px;
 }
 
-
-/* --- 3. Карты (Игровые - БОЛЬШИЕ) --- */
-.card {
-    width: 85px;  /* Широкие */
-    height: 125px; /* Высокие */
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 3px 6px rgba(0,0,0,0.3);
-    position: absolute;
-    display: flex; flex-direction: column; justify-content: space-between;
-    padding: 6px; box-sizing: border-box;
-    font-size: 24px; font-weight: bold;
-}
-
-.card.red { color: #e53935; }
-.card.black { color: #212121; }
-
-.card-top { line-height: 1; }
-.card-center { 
-    font-size: 40px; 
-    position: absolute; top: 50%; left: 50%; 
-    transform: translate(-50%, -50%);
-}
-.card-bottom { transform: rotate(180deg); line-height: 1; }
-
-/* Масштабирование карт на столе, чтобы влезали */
-.battle-zone .card {
-    transform: scale(0.9); /* Чуть меньше чем в руке */
-    position: absolute;
-    top: 0; left: 0;
-}
-.battle-zone .card:nth-child(2) { /* Защищающаяся карта */
-    transform: scale(0.9) rotate(15deg) translate(10px, 10px);
-    z-index: 2;
-}
-
-
-/* --- 4. Рука Игрока --- */
-.player-area {
+/* --- 3. ЗОНА ИГРОКА --- */
+.player-zone {
+    height: 35%; /* Отдаем больше места игроку */
     position: relative;
     display: flex;
     justify-content: center;
     align-items: flex-end;
-    padding-bottom: 20px;
-    z-index: 10;
+    z-index: 100;
 }
 
-.hand-wrapper {
+.hand-container {
     position: relative;
-    width: 100%; height: 100%;
-    display: flex; justify-content: center;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    /* Важно: позволяет картам выходить за границы контейнера вверх */
+    align-items: flex-end; 
+    padding-bottom: 10px;
 }
 
+/* --- ДИЗАЙН КАРТЫ (КЛАССИКА) --- */
+.card {
+    width: 90px;   /* БОЛЬШИЕ КАРТЫ */
+    height: 135px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: -2px 0 8px rgba(0,0,0,0.3);
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    font-weight: bold;
+    font-size: 24px;
+    /* Белый цвет фона и черный текст */
+    color: black; 
+    transition: transform 0.2s;
+}
+
+/* Цвета мастей */
+.card.red { color: #D32F2F; }
+.card.black { color: #212121; }
+
+/* Углы */
+.corner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2px 5px;
+    line-height: 0.9;
+}
+
+.top-left {
+    align-self: flex-start;
+}
+
+.bottom-right {
+    align-self: flex-end;
+    transform: rotate(180deg);
+}
+
+.main-suit {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 50px;
+    opacity: 0.8;
+}
+
+/* Позиционирование в руке */
 .hand-card {
     position: absolute;
-    bottom: 0;
-    transform-origin: center 120%; /* Точка вращения ниже карты */
-    transition: transform 0.2s;
-    box-shadow: -2px 0 10px rgba(0,0,0,0.2);
+    bottom: 0; /* Прижаты к низу */
+    transform-origin: bottom center;
+}
+
+/* Активная карта при нажатии чуть всплывает */
+.hand-card:active {
+    transform: translateY(-20px) !important;
+}
+
+/* Карты на столе чуть меньше */
+.battle-area .card, .deck-area .card {
+    transform: scale(0.75);
+    transform-origin: center;
+    position: absolute;
+    top: 0; left: 0;
+}
+.battle-area .card:nth-child(2) {
+    transform: scale(0.75) rotate(15deg) translate(15px, 15px);
+    z-index: 2;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.4);
 }
 
 
-/* --- 5. UI: Боковая панель (Бусты) --- */
-.side-panel {
-    position: absolute;
+/* --- БУСТЫ (Строго справа) --- */
+.boosts-panel {
+    position: fixed; /* Фиксируем относительно экрана */
     right: 10px;
-    top: 45%;
+    top: 40%;
     transform: translateY(-50%);
     display: flex;
     flex-direction: column;
     gap: 15px;
-    z-index: 100;
+    z-index: 1000;
 }
 
-.icon-btn {
-    width: 50px; height: 50px;
-    background: rgba(0, 0, 0, 0.3);
-    backdrop-filter: blur(5px);
-    border: 2px solid rgba(255,255,255,0.5);
+.boost-btn {
+    width: 45px; height: 45px;
+    background: rgba(0,0,0,0.4);
+    border: 2px solid rgba(255,255,255,0.6);
     border-radius: 50%;
     display: flex; justify-content: center; align-items: center;
-    font-size: 24px;
-    color: white;
-    cursor: pointer;
+    color: white; font-size: 22px;
+    backdrop-filter: blur(4px);
 }
 
-
-/* --- 6. UI: Панель Действий (Кнопки) --- */
-.action-bar {
-    position: absolute;
-    bottom: 160px; /* Над рукой игрока */
+/* --- КНОПКИ ДЕЙСТВИЙ (Снизу) --- */
+.action-buttons {
+    position: fixed;
+    bottom: 160px; /* Над картами */
     left: 0; width: 100%;
-    display: flex; justify-content: center; gap: 20px;
+    display: flex; justify-content: center;
+    gap: 20px;
     z-index: 200;
-    pointer-events: none; /* Чтобы прозрачная зона не мешала кликам */
-    opacity: 0; /* Скрыто по умолчанию */
-    transition: opacity 0.2s;
+    pointer-events: none; /* Пропускаем клики если скрыто */
 }
 
-.action-bar.visible {
-    opacity: 1;
-    pointer-events: auto;
-}
-
-.action-btn {
+.game-btn {
     padding: 12px 30px;
-    font-size: 18px;
+    border-radius: 25px;
+    border: none;
+    font-size: 16px;
     font-weight: bold;
     color: white;
-    border: none;
-    border-radius: 30px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-    cursor: pointer;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    pointer-events: auto;
+    display: none; /* Скрыты по умолчанию */
 }
 
-.take-btn {
-    background: linear-gradient(to bottom, #ff9800, #f57c00); /* Оранжевый */
-    display: none; /* JS включит нужную */
-}
-
-.pass-btn {
-    background: linear-gradient(to bottom, #4caf50, #388e3c); /* Зеленый */
-    display: none; /* JS включит нужную */
-}
+.take { background: linear-gradient(to bottom, #FF9800, #F57C00); }
+.pass { background: linear-gradient(to bottom, #4CAF50, #388E3C); }
