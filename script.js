@@ -5,7 +5,6 @@ const tg = window.Telegram.WebApp;
 const suits = ['♠', '♥', '♦', '♣'];
 const values = ['6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
 
-// Упрощенный профиль, т.к. скины удалены
 const playerProfile = {
     balance: 100,
     activeSkin: 'default' 
@@ -13,13 +12,8 @@ const playerProfile = {
 
 // ГЛАВНЫЙ ОБЪЕКТ СОСТОЯНИЯ ИГРЫ
 let gameState = {
-    deck: [],          
-    trump: null,       
-    trumpSuit: null,   
-    playerHand: [],    
-    opponentHand: [],  
-    activeCards: [],   
-    attacker: 'player' 
+    deck: [], trump: null, trumpSuit: null, playerHand: [], opponentHand: [], 
+    activeCards: [], attacker: 'player' 
 };
 
 // --- ФУНКЦИИ КОЛОДЫ И ПРАВИЛ ---
@@ -62,7 +56,6 @@ function canBeat(attacker, defender, trumpSuit) {
     return values.indexOf(defender.value) > values.indexOf(attacker.value);
 }
 
-// Проверка возможности подкидывания
 function isCardValidForThrowIn(card) {
     if (gameState.activeCards.length === 0) {
         return true;
@@ -76,7 +69,6 @@ function isCardValidForThrowIn(card) {
     return activeValues.includes(card.value);
 }
 
-// Проверка условия победы
 function checkWinCondition() {
     const deckEmpty = gameState.deck.length === 0;
 
@@ -93,7 +85,6 @@ function checkWinCondition() {
     return false;
 }
 
-// Добор карт из колоды до 6 штук
 function drawCards(playerKey) {
     const hand = gameState[playerKey];
     while (hand.length < 6 && gameState.deck.length > 0) {
@@ -162,12 +153,11 @@ function botDefend() {
         
         checkWinCondition(); 
         
-        // В упрощенной логике, даем ход обратно игроку, чтобы нажать "Бито"
         gameState.attacker = 'player';
         
     } else {
         botTakeCards();
-        return; // Выходим, так как botTakeCards вызовет рендер и обновление кнопок
+        return;
     }
 
     renderGameStatic();
@@ -228,18 +218,14 @@ function createCardElement(card) {
     return cardDiv;
 }
 
-// *** НОВАЯ ФУНКЦИЯ: Управление видимостью кнопок хода ***
 function updateMoveButtonsVisibility() {
     const moveBtnsEl = document.getElementById('move-btns');
     let shouldShow = false;
 
     if (gameState.activeCards.length > 0) {
-        // Если на столе есть карты:
         if (gameState.attacker === 'opponent') {
-            // Если бот атакует, мы можем только "Беру" и "Бито" (если отбились)
             shouldShow = true; 
         } else if (gameState.attacker === 'player') {
-            // Если мы атакуем: показываем "Бито", если последняя карта отбита
             const lastMove = gameState.activeCards[gameState.activeCards.length - 1];
             if (lastMove && lastMove.defender) {
                  shouldShow = true;
@@ -264,12 +250,12 @@ function renderPlayerHand() {
         const cardEl = createCardElement(cardData);
         cardEl.classList.add('hand-card'); 
         
-        // *** ИСПРАВЛЕНИЕ: Параметры веера для лучшей видимости ***
+        // *** ФИНАЛЬНОЕ ИСПРАВЛЕНИЕ: Параметры веера для лучшей видимости ***
         const totalCards = myCards.length;
         const middle = (totalCards - 1) / 2;
         
-        const rotateAngle = (index - middle) * 5; // Было 4, стало 5
-        const translateY = Math.abs(index - middle) * 5; // Было 3, стало 5
+        const rotateAngle = (index - middle) * 5; 
+        const translateY = Math.abs(index - middle) * 7; // УВЕЛИЧЕНО до 7
         
         cardEl.style.zIndex = index + 10; 
 
@@ -280,14 +266,11 @@ function renderPlayerHand() {
             
             if (gameState.activeCards.length > 0) {
                  if (gameState.attacker === 'player') {
-                     // Игрок подкидывает
                      makeMove(cardData.id);
                  } else {
-                     // Игрок отбивается
                      handleDefense(cardData.id);
                  }
             } else {
-                // Первый ход на пустой стол
                 makeMove(cardData.id);
             }
         });
@@ -469,8 +452,6 @@ function takeCards() {
     updateMoveButtonsVisibility();
 }
 
-// *** ЛОГИКА СКИНОВ УДАЛЕНА ***
-
 function initGame() {
     let fullDeck = createDeck();
     let shuffledDeck = shuffle(fullDeck);
@@ -499,7 +480,7 @@ function initGame() {
     renderGameStatic();
     renderPlayerHand();
     renderTable(); 
-    updateMoveButtonsVisibility(); // Обновление кнопок при запуске
+    updateMoveButtonsVisibility(); 
     
     return gameState;
 }
@@ -507,9 +488,10 @@ function initGame() {
 
 // --- ФИНАЛЬНЫЙ ЗАПУСК И ИНИЦИАЛИЗАЦИЯ API ---
 
-// Привязка кнопок (удалили кнопку скинов)
+// Привязка кнопок (УДАЛИЛИ ЛИШНЮЮ ПРИВЯЗКУ)
 document.getElementById('takeBtn').addEventListener('click', takeCards);
 document.getElementById('passBtn').addEventListener('click', endMove);
+// Привязки для заглушек 💎 и 🛡️ не нужны
 
 // Инициализация игры
 initGame();
