@@ -1,3 +1,4 @@
+const tg = window.Telegram.WebApp;
 // --- ГЛОБАЛЬНЫЕ ДАННЫЕ И СОСТОЯНИЕ ---
 const suits = ['♠', '♥', '♦', '♣'];
 const values = ['6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
@@ -507,5 +508,6 @@ function initGame() {
 document.getElementById('skinShopBtn').addEventListener('click', openSkinShop);
 document.getElementById('takeBtn').addEventListener('click', takeCards);
 document.getElementById('passBtn').addEventListener('click', endMove);
+
 
 initGame();
