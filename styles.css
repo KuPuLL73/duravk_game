@@ -9,7 +9,7 @@ body, html {
     -webkit-tap-highlight-color: transparent;
 }
 
-/* --- СЕТКА СТОЛА (Упрощенная, стабильная) --- */
+/* --- СЕТКА СТОЛА (Простая) --- */
 .game-table {
     width: 100%; height: 100%;
     position: relative;
@@ -17,44 +17,18 @@ body, html {
     flex-direction: column;
     justify-content: space-between;
     box-sizing: border-box;
-    padding: 10px 0 20px 0;
+    padding: 10px 0 20px 0; /* Общий отступ */
 }
 
-/* --- ВЕРХНИЙ ИГРОК (Бот) --- */
+/* --- ВЕРХНИЙ ИГРОК (Упрощен) --- */
 .top-player {
     height: 100px;
     width: 100%;
     display: flex;
     justify-content: center;
-    align-items: flex-end;
+    align-items: center; /* Центрируем карты и счетчик */
 }
-
-/* --- БОКОВЫЕ ИГРОКИ (Критично: сдвинуты margin'ами, а не position: absolute) --- */
-.side-player {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    opacity: 0.6;
-    z-index: 5;
-}
-
-.side-player.left { 
-    left: 10px; 
-}
-.side-player.right { 
-    right: 70px; /* Отступ от края для бустов */
-}
-
-.card-back-side {
-    width: 50px; height: 35px;
-    background: repeating-linear-gradient(45deg, #b71c1c, #b71c1c 5px, #d32f2f 5px, #d32f2f 10px);
-    border: 2px solid white;
-    border-radius: 4px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-}
+/* --- УДАЛЕНЫ СТИЛИ side-player и card-back-side --- */
 
 /* --- НИЖНИЙ ИГРОК (Вы) --- */
 .bottom-player {
@@ -69,7 +43,7 @@ body, html {
 .hand-container {
     position: relative;
     width: 100%;
-    max-width: 400px; /* Ограничиваем ширину веера */
+    max-width: 400px; 
     height: 100%;
     display: flex;
     justify-content: center;
@@ -77,7 +51,7 @@ body, html {
 
 /* --- ЦЕНТР: КОЛОДА И БИТВА --- */
 .center-table {
-    flex-grow: 1; /* Занимает все доступное место */
+    flex-grow: 1; 
     display: flex;
     align-items: center;
     justify-content: center;
@@ -88,29 +62,44 @@ body, html {
 /* КОЛОДА */
 .deck-area {
     position: absolute;
-    left: 5%; /* Сдвиг от левого края */
+    left: 5%; 
     width: 80px; height: 100px;
     display: flex; align-items: center;
 }
 
 .deck-stack {
-    position: absolute;
-    left: 15px; top: 10px;
+    position: relative; /* Должен быть относительным для счетчика */
+    /* ... остальные стили рубашки ... */
     z-index: 2;
 }
 
-/* КОЗЫРЬ (Исправлено: увеличен z-index, сдвиг минимальный) */
+/* КОЗЫРЬ */
 .trump-card {
     position: absolute;
     left: 20px; 
     top: 15px;
-    transform: rotate(90deg) translateX(15px); /* Минимальный сдвиг, чтобы не плыл */
-    z-index: 3; /* Поверх колоды, чтобы было видно! */
+    transform: rotate(90deg) translateX(15px);
+    z-index: 3; 
+}
+
+/* НОВЫЙ СТИЛЬ: СЧЕТЧИК КАРТ НА КОЛОДЕ */
+.deck-count {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    background: rgba(0,0,0,0.6);
+    padding: 2px 6px;
+    border-radius: 4px;
+    z-index: 5;
 }
 
 /* БИТВА */
 .battle-area {
-    margin-left: 90px; /* Отступ под колоду */
+    margin-left: 90px; 
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
@@ -125,7 +114,7 @@ body, html {
     margin: 5px;
 }
 
-/* --- ДИЗАЙН КАРТ --- */
+/* --- ДИЗАЙН КАРТ (Не изменен) --- */
 .card {
     width: 90px; height: 130px;
     background: white; border-radius: 8px;
@@ -134,7 +123,6 @@ body, html {
     display: flex; flex-direction: column; justify-content: space-between;
     font-weight: bold; font-size: 20px; color: black;
 }
-
 .card.red { color: #D32F2F; }
 .card.black { color: #212121; }
 
@@ -147,7 +135,6 @@ body, html {
     transform: translate(-50%, -50%);
     font-size: 55px;
 }
-
 .card-back {
     width: 50px; height: 75px;
     background: repeating-linear-gradient(45deg, #b71c1c, #b71c1c 5px, #d32f2f 5px, #d32f2f 10px);
@@ -157,21 +144,12 @@ body, html {
     transform-origin: bottom center;
     box-shadow: 0 2px 4px rgba(0,0,0,0.4);
 }
-
-/* Карты в руке игрока */
 .hand-card {
-    position: absolute;
-    bottom: 0;
-    left: 50%; 
+    position: absolute; bottom: 0; left: 50%; 
     transform-origin: 50% 150%; 
     box-shadow: -1px 0 5px rgba(0,0,0,0.3);
 }
-
-.hand-card:active {
-    bottom: 30px; 
-}
-
-/* Карты на столе */
+.hand-card:active { bottom: 30px; }
 .battle-area .card, .deck-area .card {
     width: 60px; height: 90px;
     font-size: 16px;
@@ -180,47 +158,27 @@ body, html {
 .deck-area .card .main-suit { font-size: 30px; }
 
 
-/* --- UI ЭЛЕМЕНТЫ --- */
+/* --- UI ЭЛЕМЕНТЫ (Не изменены) --- */
 .boosts-panel {
-    position: fixed;
-    right: 10px;
-    top: 30%;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    z-index: 1000;
+    position: fixed; right: 10px; top: 30%;
+    display: flex; flex-direction: column; gap: 15px; z-index: 1000;
 }
-
 .boost-btn {
-    width: 45px; height: 45px;
-    background: rgba(0,0,0,0.5);
-    border: 2px solid rgba(255,255,255,0.7);
-    border-radius: 50%;
+    width: 45px; height: 45px; background: rgba(0,0,0,0.5);
+    border: 2px solid rgba(255,255,255,0.7); border-radius: 50%;
     display: flex; justify-content: center; align-items: center;
     color: white; font-size: 22px;
 }
-
 .action-buttons {
-    position: fixed;
-    bottom: 190px;
-    width: 100%;
-    display: flex; justify-content: center;
-    gap: 20px;
-    z-index: 200;
+    position: fixed; bottom: 190px; width: 100%;
+    display: flex; justify-content: center; gap: 20px; z-index: 200;
     pointer-events: none;
 }
-
 .game-btn {
-    padding: 12px 35px;
-    border-radius: 30px;
-    border: none;
-    font-size: 16px;
-    font-weight: bold;
-    color: white;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-    pointer-events: auto;
-    display: none;
-    text-transform: uppercase;
+    padding: 12px 35px; border-radius: 30px; border: none;
+    font-size: 16px; font-weight: bold; color: white;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5); pointer-events: auto;
+    display: none; text-transform: uppercase;
 }
 .take { background: linear-gradient(to right, #ff9800, #f57c00); }
 .pass { background: linear-gradient(to right, #4caf50, #388e3c); }
