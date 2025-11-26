@@ -52,7 +52,7 @@ function updateUI() {
     updateButtons();
 }
 
-// Рендер руки игрока (Веер не изменен)
+// Рендер руки игрока (ПЛОТНЫЙ ВЕЕР)
 function renderPlayerHand() {
     const container = document.getElementById('player-hand');
     container.innerHTML = '';
@@ -61,11 +61,11 @@ function renderPlayerHand() {
     const total = cards.length;
     const cardWidth = 90; 
     
-    const angleRange = 50; 
+    const angleRange = 40; // БЫЛО 50 (Меньше угол)
     const angleStep = total > 1 ? angleRange / (total - 1) : 0;
     const startAngle = -angleRange / 2;
 
-    const overlap = 45; 
+    const overlap = 35; // БЫЛО 45 (Больше наложение)
     const handWidth = total * overlap + (cardWidth - overlap);
 
     cards.forEach((card, index) => {
@@ -86,32 +86,20 @@ function renderPlayerHand() {
     });
 }
 
-// Рендер руки соперника (УПРОЩЕНО: небольшой стек + счетчик)
+// Рендер руки соперника (ТОЛЬКО ПЛЕЙСХОЛДЕР)
 function renderOpponent() {
     const container = document.getElementById('opponent-hand');
     container.innerHTML = '';
     const count = gameState.opponentHand.length;
 
     if (count > 0) {
-        // Визуализация стека (до 3 карт)
-        for(let i=0; i<Math.min(count, 3); i++) {
-            const back = document.createElement('div');
-            back.className = 'card-back';
-            // Позиционируем в центр контейнера и немного смещаем
-            back.style.transform = `translateX(${-50 + i * 5}px) translateY(${i * 5}px)`; 
-            back.style.zIndex = i;
-            container.appendChild(back);
-        }
-        
-        // Добавление счетчика рядом со стеком
-        const countEl = document.createElement('div');
-        countEl.textContent = `${count} карт`;
-        countEl.style.color = 'white';
-        countEl.style.marginLeft = '120px'; // Отступ от карт
-        countEl.style.fontSize = '18px';
-        countEl.style.fontWeight = 'bold';
-        container.appendChild(countEl);
+        // Просто одна карта рубашкой в центре
+        const back = document.createElement('div');
+        back.className = 'card-back';
+        back.style.transform = 'translateY(15px)'; 
+        container.appendChild(back);
     }
+    // Счетчик карт противника удален.
 }
 
 function renderTable() {
@@ -132,7 +120,7 @@ function renderTable() {
     });
 }
 
-// Рендер колоды (ДОБАВЛЕН СЧЕТЧИК)
+// Рендер колоды (СЧЕТЧИК ИСПРАВЛЕН)
 function renderDeck() {
     const container = document.getElementById('deck-zone');
     container.innerHTML = '';
@@ -153,7 +141,7 @@ function renderDeck() {
         const countEl = document.createElement('div');
         countEl.className = 'deck-count';
         countEl.textContent = gameState.deck.length;
-        stack.appendChild(countEl);
+        stack.appendChild(countEl); // Прикрепляем к стеку
         
         container.appendChild(stack);
     }
