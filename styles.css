@@ -13,13 +13,13 @@ body, html {
     user-select: none;
 }
 
-/* --- Главная доска (Улучшена адаптивность) --- */
+/* --- Главная доска --- */
 .game-board {
-    width: 90%; /* Используем 90% ширины экрана */
-    max-width: 800px; /* Увеличиваем максимальную ширину для ПК */
-    height: 95vh; /* Используем относительную высоту */
+    width: 90%; 
+    max-width: 800px; 
+    height: 95vh; 
     display: grid;
-    grid-template-rows: 1fr 1.5fr 0.3fr 1fr; /* Соперник, Стол, Кнопки, Игрок */
+    grid-template-rows: 1fr 1.5fr 0.3fr 1fr;
     grid-template-areas: 
         "opponent"
         "table"
@@ -27,14 +27,14 @@ body, html {
         "player";
     background-color: #4CAF50;
     position: relative;
-    border: 2px solid #388e3c; /* Небольшая рамка для десктопа */
+    border: 2px solid #388e3c;
     border-radius: 10px;
 }
 
-/* --- Карты (Общие стили) --- */
+/* --- Карты (Общие стили - УВЕЛИЧЕНЫ) --- */
 .card {
-    width: 60px;
-    height: 90px;
+    width: 70px; /* Увеличен размер */
+    height: 105px; /* Увеличен размер */
     background-color: white;
     border: 1px solid #333;
     border-radius: 8px;
@@ -45,16 +45,16 @@ body, html {
     justify-content: space-between;
     align-items: center;
     padding: 5px;
-    font-size: 18px;
+    font-size: 20px;
     font-weight: bold;
     cursor: pointer;
     transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .card-back {
-    width: 60px;
-    height: 90px;
-    background-color: #6a1b9a; /* Фиолетовая рубашка */
+    width: 70px; /* Увеличен размер */
+    height: 105px; /* Увеличен размер */
+    background-color: #6a1b9a;
     border: 1px solid #333;
     border-radius: 8px;
     box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
@@ -101,20 +101,21 @@ body, html {
     flex-direction: column;
     align-items: center;
     position: relative;
-    width: 60px;
-    height: 90px;
+    width: 70px; /* Увеличен размер под карты */
+    height: 105px; /* Увеличен размер под карты */
 }
 
 .deck-stack {
     position: absolute;
     top: 0;
     left: 0;
-    transform: translate(5px, 5px); /* Сдвиг для эффекта стопки */
+    transform: translate(5px, 5px); 
 }
 
 .trump-card {
-    transform: rotate(90deg) translateX(30px) translateY(30px);
-    margin-top: 30px;
+    /* Корректировка, чтобы козырь был внизу колоды */
+    transform: rotate(90deg) translateX(17px) translateY(17px);
+    margin-top: 17px;
     position: relative;
 }
 
@@ -144,14 +145,14 @@ body, html {
 .hand-wrapper {
     display: flex;
     position: relative;
-    height: 150px; /* Даем место для веера */
+    height: 150px;
     justify-content: center;
 }
 
 .hand-card {
     position: absolute;
     bottom: 0;
-    transform-origin: center 100%; /* Веер вращается от центра нижней части */
+    transform-origin: center 100%;
     z-index: 10;
 }
 
@@ -161,15 +162,27 @@ body, html {
     box-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
 }
 
-/* --- Кнопки и Читы (ОБНОВЛЕНО: Перенесены в правый угол) --- */
+/* --- Кнопки и Читы (ФИНАЛЬНЫЙ МАКЕТ) --- */
 .cheat-panel {
     grid-area: cheats;
     display: flex;
-    /* Выравниваем элементы справа */
-    justify-content: flex-end; 
+    /* Разделяем кнопки хода (слева) и расходников (справа) */
+    justify-content: space-between; 
     align-items: center;
-    gap: 10px; /* Добавляем небольшой отступ между кнопками */
-    padding-right: 15px; /* Отступ от правого края */
+    padding: 0 15px;
+}
+
+/* Стили для контейнера кнопок хода (БИТО/БЕРУ) */
+#move-btns {
+    display: flex;
+    gap: 10px;
+    visibility: hidden; /* Изначально скрыт */
+}
+
+/* Стили для контейнера расходников */
+.consumable-btns {
+    display: flex;
+    gap: 10px;
 }
 
 .cheat-btn {
@@ -190,7 +203,7 @@ body, html {
 }
 
 /* --- Скины --- */
-/* Скин Киберпанк */
+/* (Оставлены на будущее, но не используются в JS) */
 .card.skin-cyberpunk {
     background: linear-gradient(135deg, #1e004e, #001233);
     color: #00ffc8;
@@ -201,8 +214,6 @@ body, html {
 .card.skin-cyberpunk.red {
     color: #ff5722;
 }
-
-/* Скин Золото */
 .card.skin-gold {
     background: linear-gradient(135deg, #ffd700, #ffeb3b);
     color: #333;
