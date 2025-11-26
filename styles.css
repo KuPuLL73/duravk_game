@@ -13,7 +13,7 @@ body, html {
     user-select: none;
 }
 
-/* --- Главная доска --- */
+/* --- Главная доска (Улучшена адаптивность) --- */
 .game-board {
     width: 90%; /* Используем 90% ширины экрана */
     max-width: 800px; /* Увеличиваем максимальную ширину для ПК */
@@ -161,12 +161,15 @@ body, html {
     box-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
 }
 
-/* --- Кнопки и Читы --- */
+/* --- Кнопки и Читы (ОБНОВЛЕНО: Перенесены в правый угол) --- */
 .cheat-panel {
     grid-area: cheats;
     display: flex;
-    justify-content: space-around;
+    /* Выравниваем элементы справа */
+    justify-content: flex-end; 
     align-items: center;
+    gap: 10px; /* Добавляем небольшой отступ между кнопками */
+    padding-right: 15px; /* Отступ от правого края */
 }
 
 .cheat-btn {
