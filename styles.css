@@ -15,9 +15,9 @@ body, html {
 
 /* --- Главная доска --- */
 .game-board {
-    width: 100%;
-    max-width: 600px; /* Ограничение ширины для мобильных */
-    height: 100%;
+    width: 90%; /* Используем 90% ширины экрана */
+    max-width: 800px; /* Увеличиваем максимальную ширину для ПК */
+    height: 95vh; /* Используем относительную высоту */
     display: grid;
     grid-template-rows: 1fr 1.5fr 0.3fr 1fr; /* Соперник, Стол, Кнопки, Игрок */
     grid-template-areas: 
@@ -27,6 +27,8 @@ body, html {
         "player";
     background-color: #4CAF50;
     position: relative;
+    border: 2px solid #388e3c; /* Небольшая рамка для десктопа */
+    border-radius: 10px;
 }
 
 /* --- Карты (Общие стили) --- */
