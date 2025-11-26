@@ -2,24 +2,25 @@
 body, html {
     margin: 0;
     padding: 0;
-    overflow: hidden; /* Важно для Web App */
+    overflow: hidden; 
     height: 100%;
     width: 100%;
     font-family: sans-serif;
-    background: #4CAF50; /* Зеленый фон стола */
+    background: #4CAF50;
     display: flex;
     justify-content: center;
     align-items: center;
     user-select: none;
 }
 
-/* --- Главная доска --- */
+/* --- Главная доска (КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: Соотношение строк) --- */
 .game-board {
     width: 90%; 
     max-width: 800px; 
     height: 95vh; 
     display: grid;
-    grid-template-rows: 1fr 1.5fr 0.3fr 1fr;
+    /* УВЕЛИЧЕНО пространство для игрока (1.5fr) и уменьшено для стола (1.2fr) */
+    grid-template-rows: 1fr 1.2fr 0.3fr 1.5fr; 
     grid-template-areas: 
         "opponent"
         "table"
@@ -31,12 +32,12 @@ body, html {
     border-radius: 10px;
 }
 
-/* --- Карты (Общие стили - УВЕЛИЧЕНЫ) --- */
+/* --- Карты (Общие стили) --- */
 .card {
-    width: 70px; /* Увеличен размер */
-    height: 105px; /* Увеличен размер */
+    width: 70px; 
+    height: 105px; 
     background-color: white;
-    border: 1px solid #333;
+    border: 1户 solid #333;
     border-radius: 8px;
     box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
     position: absolute;
@@ -52,8 +53,8 @@ body, html {
 }
 
 .card-back {
-    width: 70px; /* Увеличен размер */
-    height: 105px; /* Увеличен размер */
+    width: 70px; 
+    height: 105px; 
     background-color: #6a1b9a;
     border: 1px solid #333;
     border-radius: 8px;
@@ -101,8 +102,8 @@ body, html {
     flex-direction: column;
     align-items: center;
     position: relative;
-    width: 70px; /* Увеличен размер под карты */
-    height: 105px; /* Увеличен размер под карты */
+    width: 70px;
+    height: 105px;
 }
 
 .deck-stack {
@@ -113,7 +114,6 @@ body, html {
 }
 
 .trump-card {
-    /* Корректировка, чтобы козырь был внизу колоды */
     transform: rotate(90deg) translateX(17px) translateY(17px);
     margin-top: 17px;
     position: relative;
@@ -145,7 +145,7 @@ body, html {
 .hand-wrapper {
     display: flex;
     position: relative;
-    height: 150px;
+    height: 180px; /* Достаточно места для веера */
     justify-content: center;
 }
 
@@ -166,17 +166,18 @@ body, html {
 .cheat-panel {
     grid-area: cheats;
     display: flex;
-    /* Разделяем кнопки хода (слева) и расходников (справа) */
+    /* Кнопки хода (слева) и расходников (справа) */
     justify-content: space-between; 
     align-items: center;
     padding: 0 15px;
 }
 
-/* Стили для контейнера кнопок хода (БИТО/БЕРУ) */
+/* КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: Кнопки БИТО/БЕРУ в столбик */
 #move-btns {
     display: flex;
+    flex-direction: column; /* ВАЖНОЕ ИЗМЕНЕНИЕ: В столбик */
     gap: 10px;
-    visibility: hidden; /* Изначально скрыт */
+    visibility: hidden; /* Скрыты на старте */
 }
 
 /* Стили для контейнера расходников */
@@ -200,26 +201,4 @@ body, html {
     background-color: #fbc02d;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     transform: translateY(2px);
-}
-
-/* --- Скины --- */
-/* (Оставлены на будущее, но не используются в JS) */
-.card.skin-cyberpunk {
-    background: linear-gradient(135deg, #1e004e, #001233);
-    color: #00ffc8;
-    border: 2px solid #ff00ff;
-    box-shadow: 0 0 10px #ff00ff;
-    font-family: monospace;
-}
-.card.skin-cyberpunk.red {
-    color: #ff5722;
-}
-.card.skin-gold {
-    background: linear-gradient(135deg, #ffd700, #ffeb3b);
-    color: #333;
-    border: 2px solid #b8860b;
-    box-shadow: 0 0 10px #ffd700;
-}
-.card.skin-gold.red {
-    color: #b71c1c;
 }
